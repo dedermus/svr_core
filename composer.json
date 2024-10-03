@@ -1,9 +1,9 @@
 {
-    "name": "svr/raw",
-    "description": "SVR RAW - A simple Laravel package.",
+    "name": "svr/core",
+    "description": "SVR CORE - A simple core package for SVR.",
     "type": "library",
     "license": "GPL-3.0-or-later",
-    "homepage": "https://github.com/Spirit412/svr_raw",
+    "homepage": "https://github.com/Spirit412/svr_core",
     "authors": [
         {
             "name": "Domanskiy Aleksandr",
@@ -12,13 +12,13 @@
     ],
     "autoload": {
         "psr-4": {
-            "Svr\\Raw\\": "src/"
+            "Svr\\Core\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Svr\\Raw\\RawServiceProvider"
+                "Svr\\Core\\RawServiceProvider"
             ]
         }
     },

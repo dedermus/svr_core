@@ -1,17 +1,12 @@
-SVR RAW для Open-Admin
+SVR CORE для Open-Admin
 =========================
 
 ## Установка
 
 ```
-$ composer require svr/raw
+$ composer require svr/core
 
-$ php artisan migrate --path=vendor/svr/raw/database/migrations
-
-```
-## Добавление пунктов меню.
-```
-$ php artisan admin:import svr-raw
+$ php artisan migrate --path=vendor/svr/core/database/migrations
 
 ```
 
@@ -24,12 +19,5 @@ License
 
 [//]: # (Licensed under [The MIT License &#40;GPL 3.0&#41;]&#40;LICENSE&#41;.)
 
-
-## Permission.
-Если пермиссий на роуты в БД нет (проверка по слагу), создаются через команду
-```
-$ php artisan migrate --path=vendor/svr/raw/database/migrations
 ```
 
-## Пункты меню
-Устанавливаются только если отсутствуют в БД. Проверка по uri. URI должен содержать в начале `raw`
