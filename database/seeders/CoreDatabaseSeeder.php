@@ -4,7 +4,7 @@ namespace Svr\Core\Seeders;
 
 use Illuminate\Database\Seeder;
 
-class DatabaseSeeder extends Seeder
+class CoreDatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
@@ -15,5 +15,6 @@ class DatabaseSeeder extends Seeder
         (new table_data_system_modules_actions)->run();
         (new table_data_system_roles)->run();
         (new table_data_system_settings)->run();
+        (new table_data_system_users_notifications_messages)->run();
     }
 }
