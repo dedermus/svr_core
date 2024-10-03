@@ -25,3 +25,6 @@ License
 
 ```
 
+Seeders
+
+`php artisan db:seed --class=Svr\Core\Seeders\DatabaseSeeder`
