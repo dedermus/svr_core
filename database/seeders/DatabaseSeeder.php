@@ -4,7 +4,7 @@ namespace Svr\Core\Seeders;
 
 use Illuminate\Database\Seeder;
 
-class CoreDatabaseSeeder extends Seeder
+class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
