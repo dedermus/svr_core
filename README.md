@@ -10,6 +10,10 @@ $ php artisan migrate --path=vendor/svr/core/database/migrations
 
 ```
 
+Миграции от 2024_01_01_000001 до 2024_01_01_000012. 
+
+Все последующие должны быть новее
+
 ## Usage
 
 [//]: # (See [wiki]&#40;http://open-admin.org/docs/en/extension-helpers&#41;)
