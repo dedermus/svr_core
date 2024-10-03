@@ -14,6 +14,7 @@ class CoreServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+            $this->publishes([__DIR__.'/../database/seeders' => database_path('seeders')], 'svr-core-seeders');
             $this->publishes([__DIR__.'/../resources/lang' => resource_path('lang')], 'svr-core-lang');
         }
 
