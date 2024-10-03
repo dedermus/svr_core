@@ -14,10 +14,10 @@ class CoreServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-            $this->publishes([__DIR__.'/../resources/lang' => resource_path('lang')], 'open-admin-lang');
+            $this->publishes([__DIR__.'/../resources/lang' => resource_path('lang')], 'svr-core-lang');
         }
 
-        RawManager::boot();
+        CoreManager::boot();
     }
 
 }
