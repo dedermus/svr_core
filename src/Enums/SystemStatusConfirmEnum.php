@@ -1,8 +1,9 @@
 <?php
 
-namespace App;
+namespace Svr\Core\Enums;
 
-use App\Traits\GetEnums;
+use Svr\Core\Traits\GetEnums;
+
 enum SystemStatusConfirmEnum: string
 {
     use GetEnums;

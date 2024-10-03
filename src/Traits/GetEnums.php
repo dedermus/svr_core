@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Traits;
+namespace Svr\Core\Traits;
 
 trait GetEnums
 {

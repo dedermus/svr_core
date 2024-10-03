@@ -1,19 +1,19 @@
 <?php
 
-use App\ApplicationAnimalStatusEnum;
-use App\ApplicationStatusEnum;
-use App\HerriotErrorTypesEnum;
-use App\ImportStatusEnum;
-use App\SystemBreedingValueEnum;
-use App\SystemNotificationsTypesEnum;
-use App\SystemParticipationsTypesEnum;
-use App\SystemSexEnum;
-use App\SystemStatusConfirmEnum;
-use App\SystemStatusDeleteEnum;
-use App\SystemStatusEnum;
-use App\SystemStatusNotificationEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use packages\svr\core\src\Enums\ApplicationAnimalStatusEnum;
+use packages\svr\core\src\Enums\ApplicationStatusEnum;
+use packages\svr\core\src\Enums\HerriotErrorTypesEnum;
+use packages\svr\core\src\Enums\ImportStatusEnum;
+use packages\svr\core\src\Enums\SystemBreedingValueEnum;
+use packages\svr\core\src\Enums\SystemNotificationsTypesEnum;
+use packages\svr\core\src\Enums\SystemParticipationsTypesEnum;
+use packages\svr\core\src\Enums\SystemSexEnum;
+use packages\svr\core\src\Enums\SystemStatusConfirmEnum;
+use packages\svr\core\src\Enums\SystemStatusDeleteEnum;
+use packages\svr\core\src\Enums\SystemStatusEnum;
+use packages\svr\core\src\Enums\SystemStatusNotificationEnum;
 
 
 return new class extends Migration {
