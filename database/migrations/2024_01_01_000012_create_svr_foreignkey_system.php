@@ -21,11 +21,6 @@ return new class extends Migration {
             $table->foreign('role_slug')->references('role_slug')->on('system.system_roles')->cascadeOnUpdate()->noActionOnDelete();
         });
 
-        Schema::table('system.system_roles_rights', function (Blueprint $table)
-        {
-            $table->foreign('right_slug')->references('right_slug')->on('system.system_modules_actions')->cascadeOnUpdate()->noActionOnDelete();
-        });
-
         Schema::table('system.system_users_notifications', function (Blueprint $table)
         {
             $table->foreign('user_id')->references('user_id')->on('system.system_users')->cascadeOnUpdate()->noActionOnDelete();

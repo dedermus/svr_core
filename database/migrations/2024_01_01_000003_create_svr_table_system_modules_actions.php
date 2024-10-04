@@ -27,7 +27,7 @@ return new class extends Migration
                 );
                 $table->string('right_action', 200)->nullable(false)->comment('Экшен');
                 $table->string('right_name', 200)->nullable(false)->comment('Имя экшена');
-                $table->string('right_slug', 32)->nullable(false)->default('admin')->unique()->comment(
+                $table->string('right_slug', 32)->nullable(false)->default('admin')->comment(
                     'Слаг для экшена (уникальный идентификатор)'
                 );
                 $table->string('right_content_type', 32)->nullable(false)->default('json')->comment('Тип запроса');
