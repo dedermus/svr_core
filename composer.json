@@ -1,6 +1,6 @@
 {
     "name": "svr/core",
-    "description": "SVR CORE - A simple core package for SVR.",
+    "description": "SVR CORE - A simple core package for SVR",
     "type": "library",
     "license": "MIT",
     "homepage": "https://github.com/dedermus/svr_core",
