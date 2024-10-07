@@ -23,8 +23,13 @@ License
 
 [//]: # (Licensed under [The MIT License &#40;GPL 3.0&#41;]&#40;LICENSE&#41;.)
 
-```
 
 Seeders
+------------
 
+`php artisan db:seed --class=Svr\Core\Seeders\DatabaseSeeder`
+
+
+Lang
+------------
 `php artisan db:seed --class=Svr\Core\Seeders\DatabaseSeeder`
