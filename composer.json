@@ -2,12 +2,12 @@
     "name": "svr/core",
     "description": "SVR CORE - A simple core package for SVR.",
     "type": "library",
-    "license": "GPL-3.0-or-later",
-    "homepage": "https://github.com/Spirit412/svr_core",
+    "license": "MIT",
+    "homepage": "https://github.com/dedermus/svr_core",
     "authors": [
         {
-            "name": "Domanskiy Aleksandr",
-            "email": "domanskiy.av@plinor.ru"
+            "name": "dedermus",
+            "email": "dedermus@yandex.ru"
         }
     ],
     "autoload": {
