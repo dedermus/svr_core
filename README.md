@@ -38,7 +38,7 @@ Lang
 
 ### Кастомный вывод даты в колонке grid
 
-'**xx_datetime**'
+**xx_datetime**
 
 Example:
 `
@@ -48,7 +48,7 @@ $grid->column('name', 'label')->display(function ($value) {return Carbon::parse(
 
 ### Кастомный вывод даты и времени в show
 
-'**xx_datetime**'
+**xx_datetime**
 
 Example:
 `
@@ -59,7 +59,7 @@ xx_datetime принимает строковый параметр формат�
 
 ### Вывод подсказок для поля в show
 
-'**xx_help**'
+**xx_help**
 
 Example:
 `
@@ -69,14 +69,14 @@ $show->field('name', 'label')->xx_help('help field message'),
 
 ### Валидация полей редактирования/создания с использованием JS Bootstrap
 
-'**xx_input**'
+**xx_input**
 
 Example:
 `
 $form->xx_input('country_name', 'country_name')->rules('max:100', ['max' => trans('validation.max')])->valid_bootstrap();
 `
 
-Вместо `text` используем 'xx_input'. Указываем ограничения `rules`. Если нужно что бы ограничения обрабатывались через js bootstrap, добавляем ->valid_bootstrap()
+Вместо `text` используем 'xx_input'. Указываем ограничения `rules`. Если нужно что бы ограничения обрабатывались через js bootstrap, добавляем `->valid_bootstrap()`
 
 Текст сообщения берётся из `rules`.
 
@@ -86,3 +86,9 @@ $form->xx_input('country_name', 'country_name')->rules('max:100', ['max' => tran
 - required
 - regex
 
+### Использование lang файлов пакета svr/core 
+
+Файлы перевода из пакета подключается по тегу `svr-core-lang`.
+
+Example:
+`$grid->column('user_last', __('svr-core-lang::svr.user.user_last'))->sortable();`
