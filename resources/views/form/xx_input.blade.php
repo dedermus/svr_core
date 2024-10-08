@@ -18,7 +18,7 @@
     @endisset
 
     @isset($invalid_feedback)
-        @include("admin.form.xx_invalid-feedback-block")
+        @include("svr-core::form.xx_invalid-feedback-block")
     @endisset
 
 </div>

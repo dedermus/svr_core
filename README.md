@@ -33,3 +33,7 @@ Seeders
 Lang
 ------------
 `php artisan db:seed --class=Svr\Core\Seeders\DatabaseSeeder`
+
+Опубликуем ресурсы пакета
+------------
+`php artisan vendor:publish --tag=svr-core-lang"`
