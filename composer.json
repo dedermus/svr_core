@@ -13,7 +13,8 @@
     "autoload": {
         "psr-4": {
             "Svr\\Core\\": "src/"
-        }
+        },
+        "files": ["src/bootstrap.php"]
     },
     "extra": {
         "laravel": {

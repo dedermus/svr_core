@@ -1,5 +1,7 @@
 <?php
 
+namespace Svr\Core;
+
 use OpenAdminCore\Admin\Grid\Column;
 use OpenAdminCore\Admin\Show;
 use OpenAdminCore\Admin\Form;
@@ -23,8 +25,8 @@ use OpenAdminCore\Admin\Form;
 
 Form::forget(['map', 'editor']);
 
-Column::extend('xx_datetime', Svr\Core\Extensions\Column\XxDateTimeFormatter::class);      // Вывод даты в солонке grid
-Show::extend('xx_datetime', Svr\Core\Extensions\Show\XxDateTimeFormatter::class);           // Вывод даты в show
-Show::extend('xx_help', Svr\Core\Extensions\Show\XxHelp::class);                            // Вывод подсказки в show
+Column::extend('xx_datetime', Extensions\Column\XxDateTimeFormatter::class);      // Вывод даты в солонке grid
+Show::extend('xx_datetime', Extensions\Show\XxDateTimeFormatter::class);           // Вывод даты в show
+Show::extend('xx_help', Extensions\Show\XxHelp::class);                            // Вывод подсказки в show
 
-Form::extend('xx_input', Svr\Core\Extensions\Form\XxInput::class);                          // Кастомное поле ввода текста с поддержкой подсказок и валидацией JS Bootstrap
+Form::extend('xx_input', Extensions\Form\XxInput::class);                          // Кастомное поле ввода текста с поддержкой подсказок и валидацией JS Bootstrap

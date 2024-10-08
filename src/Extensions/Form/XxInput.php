@@ -13,7 +13,7 @@ use OpenAdminCore\Admin\Form\Field\Traits\PlainInput;
  */
 class XxInput extends Field\Text
 {
-    protected $view = 'admin.form.xx_input';
+    protected $view = 'svr-core::form.xx_input';
 
     use PlainInput;
     use HasValuePicker;
@@ -90,7 +90,7 @@ class XxInput extends Field\Text
      */
     public function render()
     {
-        $this->setView('admin.form.xx_input');
+        $this->setView('svr-core::form.xx_input');
         $this->initPlainInput();
 
         if (!$this->withoutIcon) {
