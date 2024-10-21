@@ -30,9 +30,9 @@ Seeders
 `php artisan db:seed --class=Svr\Core\Seeders\DatabaseSeeder`
 
 
-Lang
+Import extend for open-admin
 ------------
-`php artisan db:seed --class=Svr\Core\Seeders\DatabaseSeeder` svr-core-lang
+`php artisan admin:import svr-core`
 
 Реализованы кастомные поля и методы:
 
