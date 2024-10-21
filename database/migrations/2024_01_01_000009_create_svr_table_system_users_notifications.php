@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 use Svr\Core\Traits\PostgresGrammar;
 
 return new class extends Migration
@@ -29,8 +29,8 @@ return new class extends Migration
                 $table->text('notification_text')->nullable(false)->comment('Текст уведомления');
                 $table->timestamp('notification_date_add')->nullable(false)->default(DB::raw('CURRENT_TIMESTAMP'))->comment('Дата создания уведомления');
                 $table->timestamp('notification_date_view')->nullable(true)->default(null)->comment('Дата просмотра уведомления. Если NULL, то уведомление еще не просмотрено');
-                $table->timestamp('notification_created_at')->nullable(false)->default(DB::raw('CURRENT_TIMESTAMP'))->comment('Дата создания записи');
-                $table->timestamp('update_at')->nullable(false)->default(DB::raw('CURRENT_TIMESTAMP'))->comment('Дата удаления записи');
+                // Это поля "created_at" и "updated_at".
+                $table->timestamps();
             });
         }
     }

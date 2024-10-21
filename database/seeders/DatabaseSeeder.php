@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        (new table_data_system_users)->run();
         (new table_data_system_modules)->run();
         (new table_data_system_modules_actions)->run();
         (new table_data_system_roles)->run();

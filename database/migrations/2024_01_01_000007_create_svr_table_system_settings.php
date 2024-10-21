@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -21,9 +20,9 @@ return new class extends Migration
                 $table->bigInteger('owner_id')->nullable(false)->default(0)->comment('идентификатор принадлежности записи');
                 $table->string('setting_code', 50)->nullable(false)->comment('код записи');
                 $table->text('setting_value')->nullable(false)->comment('значение');
-                $table->string('setting_value_alt', 255)->nullable(false)->comment('альтернативное значение');
-                $table->timestamp('setting_created_at')->nullable(false)->default(DB::raw('CURRENT_TIMESTAMP'))->comment('Дата создания записи');
-                $table->timestamp('update_at')->nullable(false)->default(DB::raw('CURRENT_TIMESTAMP'))->comment('Дата удаления записи');
+                $table->string('setting_value_alt', 255)->nullable(true)->comment('альтернативное значение');
+                // Это поля "created_at" и "updated_at".
+                $table->timestamps();
             });
         }
     }
