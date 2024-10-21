@@ -2,31 +2,25 @@
 
 namespace Svr\Core;
 
-use OpenAdminCore\Admin\Grid\Column;
-use OpenAdminCore\Admin\Show;
-use OpenAdminCore\Admin\Form;
-/**
- * Open-admin - admin builder based on Laravel.
- * @author z-song <https://github.com/z-song>
- *
- * Bootstraper for Admin.
- *
- * Here you can remove builtin form field:
- * OpenAdminCore\Admin\Form::forget(['map', 'editor']);
- *
- * Or extend custom form field:
- * OpenAdminCore\Admin\Form::extend('php', PHPEditor::class);
- *
- * Or require js and css assets:
- * Admin::css('/packages/prettydocs/css/styles.css');
- * Admin::js('/packages/prettydocs/js/main.js');
- *
- */
+use OpenAdminCore\Admin\Extension;
+use OpenAdminCore\Admin\Facades\Admin;
 
-Form::forget(['map', 'editor']);
+class SvrCore extends Extension
+{
 
-Column::extend('xx_datetime', Extensions\Column\XxDateTimeFormatter::class);      // Вывод даты в солонке grid
-Show::extend('xx_datetime', Extensions\Show\XxDateTimeFormatter::class);           // Вывод даты в show
-Show::extend('xx_help', Extensions\Show\XxHelp::class);                            // Вывод подсказки в show
+    public function bootstrap()
+    {
+        $this->fireBootingCallbacks();
 
-Form::extend('xx_input', Extensions\Form\XxInput::class);                          // Кастомное поле ввода текста с поддержкой подсказок и валидацией JS Bootstrap
+        require config('admin.bootstrap', admin_path('bootstrap.php'));
+
+        $this->addAdminAssets();
+
+        $this->fireBootedCallbacks();
+    }
+
+    public $name = 'svr-core';
+
+    public $views = __DIR__ . '/../resources/views';
+
+}
