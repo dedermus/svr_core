@@ -1,8 +1,8 @@
 <?php
 
-namespace Svr\Core\Controlles\System;
+namespace Svr\Core\Controllers;
 
-use Svr\Core\Models\System\SystemSetting;
+use Svr\Core\Models\SystemSetting;
 use Illuminate\Support\Carbon;
 use OpenAdminCore\Admin\Controllers\AdminController;
 use OpenAdminCore\Admin\Form;

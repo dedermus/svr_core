@@ -1,14 +1,14 @@
 <?php
 
-namespace Svr\Core\Models\System;
+namespace Svr\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Модель Modules
+ * Модель Setting
  */
-class SystemModules extends Model
+class SystemSetting extends Model
 {
     use HasFactory;
 
@@ -17,14 +17,14 @@ class SystemModules extends Model
      *
      * @var string
      */
-    protected $table = 'system.system_modules';
+    protected $table = 'system.system_settings';
 
     /**
      * Первичный ключ таблицы
      *
      * @var string
      */
-    protected $primaryKey = 'module_id';
+    protected $primaryKey = 'setting_id';
 
     /**
      * Поле даты создания строки
@@ -47,10 +47,11 @@ class SystemModules extends Model
      */
     protected $fillable
         = [
-            'module_name',                  // Название модуля
-            'module_description',           // Описание модуля
-            'module_class_name',            // Имя класса модуля
-            'module_slug',                  // Слаг для модуля (уникальный идентификатор)
+            'owner_type',                   // признак принадлежности записи
+            'owner_id',                     // идентификатор принадлежности записи
+            'setting_code',                 // код записи
+            'setting_value',                // значение
+            'setting_value_alt',            // альтернативное значение
             'created_at',                   // Дата создания записи
             'updated_at',                   // Дата редактирования записи
         ];
@@ -83,7 +84,7 @@ class SystemModules extends Model
      *
      * @return void
      */
-    public function moduleCreate($request): void
+    public function settingCreate($request): void
     {
         $this->rules($request);
         $this->fill($request->all());
@@ -96,7 +97,7 @@ class SystemModules extends Model
      *
      * @return void
      */
-    public function moduleUpdate($request): void
+    public function settingUpdate($request): void
     {
         // валидация
         $this->rules($request);
@@ -132,31 +133,34 @@ class SystemModules extends Model
             );
         }
 
-        // module_name - Название модуля
+        // owner_type - признак принадлежности записи
         $request->validate(
-            ['module_name' => 'required|string|max:64'],
-            ['module_name' => trans('svr-core-lang::validation')],
+            ['owner_type' => 'required|string|max:255'],
+            ['owner_type' => trans('svr-core-lang::validation')],
         );
 
-        // module_description - Описание модуля
+        // owner_id - идентификатор принадлежности записи
         $request->validate(
-            ['module_description' => 'required|string|max:100'],
-            ['module_description' => trans('svr-core-lang::validation')],
+            ['owner_id' => 'required|numeric|max:99999999999'],
+            ['owner_id' => trans('svr-core-lang::validation')],
         );
 
-        // module_class_name - Имя класса модуля
+        // setting_code - код записи
         $request->validate(
-            ['module_class_name' => 'required|string|max:32'],
-            ['module_class_name' => trans('svr-core-lang::validation')],
+            ['setting_code' => 'required|string|max:50'],
+            ['setting_code' => trans('svr-core-lang::validation')],
         );
 
-        // module_slug - Слаг для модуля (уникальный идентификатор)
-        $unique = is_null($id)
-            ? '|unique:.'.$this->getTable().',module_slug,null,'.$this->primaryKey
-            : '|unique:.'.$this->getTable().',module_slug,'.$id.','.$this->primaryKey;
+        // setting_value - значение
         $request->validate(
-            ['module_slug' => 'required|string|max:32|'.$unique],
-            ['module_slug' => trans('svr-core-lang::validation')],
+            ['setting_value' => 'required|string'],
+            ['setting_value' => trans('svr-core-lang::validation')],
+        );
+
+        // setting_value_alt - альтернативное значение
+        $request->validate(
+            ['setting_value_alt' => 'nullable|string|max:255'],
+            ['setting_value_alt' => trans('svr-core-lang::validation')],
         );
     }
 }

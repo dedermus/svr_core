@@ -1,9 +1,9 @@
 <?php
 
-namespace Svr\Core\Controlles\System;
+namespace Svr\Core\Controllers;
 
-use Svr\Core\Models\System\SystemUsers;
-use Svr\Core\Models\System\SystemUsersToken;
+use Svr\Core\Models\SystemUsers;
+use Svr\Core\Models\SystemUsersToken;
 use Illuminate\Support\Carbon;
 use OpenAdminCore\Admin\Controllers\AdminController;
 use OpenAdminCore\Admin\Form;

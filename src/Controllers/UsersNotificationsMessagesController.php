@@ -1,8 +1,8 @@
 <?php
 
-namespace Svr\Core\Controlles\System;
+namespace Svr\Core\Controllers;
 
-use Svr\Core\Models\System\SystemUsersNotificationsMessages;
+use Svr\Core\Models\SystemUsersNotificationsMessages;
 use Illuminate\Support\Carbon;
 use OpenAdminCore\Admin\Controllers\AdminController;
 use OpenAdminCore\Admin\Facades\Admin;

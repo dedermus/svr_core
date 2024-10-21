@@ -1,14 +1,14 @@
 <?php
 
-namespace Svr\Core\Models\System;
+namespace Svr\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Модель Setting
+ * Модель Modules
  */
-class SystemSetting extends Model
+class SystemModules extends Model
 {
     use HasFactory;
 
@@ -17,14 +17,14 @@ class SystemSetting extends Model
      *
      * @var string
      */
-    protected $table = 'system.system_settings';
+    protected $table = 'system.system_modules';
 
     /**
      * Первичный ключ таблицы
      *
      * @var string
      */
-    protected $primaryKey = 'setting_id';
+    protected $primaryKey = 'module_id';
 
     /**
      * Поле даты создания строки
@@ -47,11 +47,10 @@ class SystemSetting extends Model
      */
     protected $fillable
         = [
-            'owner_type',                   // признак принадлежности записи
-            'owner_id',                     // идентификатор принадлежности записи
-            'setting_code',                 // код записи
-            'setting_value',                // значение
-            'setting_value_alt',            // альтернативное значение
+            'module_name',                  // Название модуля
+            'module_description',           // Описание модуля
+            'module_class_name',            // Имя класса модуля
+            'module_slug',                  // Слаг для модуля (уникальный идентификатор)
             'created_at',                   // Дата создания записи
             'updated_at',                   // Дата редактирования записи
         ];
@@ -84,7 +83,7 @@ class SystemSetting extends Model
      *
      * @return void
      */
-    public function settingCreate($request): void
+    public function moduleCreate($request): void
     {
         $this->rules($request);
         $this->fill($request->all());
@@ -97,7 +96,7 @@ class SystemSetting extends Model
      *
      * @return void
      */
-    public function settingUpdate($request): void
+    public function moduleUpdate($request): void
     {
         // валидация
         $this->rules($request);
@@ -133,34 +132,31 @@ class SystemSetting extends Model
             );
         }
 
-        // owner_type - признак принадлежности записи
+        // module_name - Название модуля
         $request->validate(
-            ['owner_type' => 'required|string|max:255'],
-            ['owner_type' => trans('svr-core-lang::validation')],
+            ['module_name' => 'required|string|max:64'],
+            ['module_name' => trans('svr-core-lang::validation')],
         );
 
-        // owner_id - идентификатор принадлежности записи
+        // module_description - Описание модуля
         $request->validate(
-            ['owner_id' => 'required|numeric|max:99999999999'],
-            ['owner_id' => trans('svr-core-lang::validation')],
+            ['module_description' => 'required|string|max:100'],
+            ['module_description' => trans('svr-core-lang::validation')],
         );
 
-        // setting_code - код записи
+        // module_class_name - Имя класса модуля
         $request->validate(
-            ['setting_code' => 'required|string|max:50'],
-            ['setting_code' => trans('svr-core-lang::validation')],
+            ['module_class_name' => 'required|string|max:32'],
+            ['module_class_name' => trans('svr-core-lang::validation')],
         );
 
-        // setting_value - значение
+        // module_slug - Слаг для модуля (уникальный идентификатор)
+        $unique = is_null($id)
+            ? '|unique:.'.$this->getTable().',module_slug,null,'.$this->primaryKey
+            : '|unique:.'.$this->getTable().',module_slug,'.$id.','.$this->primaryKey;
         $request->validate(
-            ['setting_value' => 'required|string'],
-            ['setting_value' => trans('svr-core-lang::validation')],
-        );
-
-        // setting_value_alt - альтернативное значение
-        $request->validate(
-            ['setting_value_alt' => 'nullable|string|max:255'],
-            ['setting_value_alt' => trans('svr-core-lang::validation')],
+            ['module_slug' => 'required|string|max:32|'.$unique],
+            ['module_slug' => trans('svr-core-lang::validation')],
         );
     }
 }

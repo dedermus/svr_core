@@ -1,6 +1,6 @@
 <?php
 
-namespace Svr\Core\Models\System;
+namespace Svr\Core\Models;
 
 use Svr\Core\Traits\GetEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -141,8 +141,8 @@ class SystemUsers extends Model
     public function getUrlAvatar($avatar): string
     {
         // если файл аватар существует
-        if (Storage::exists($this->getDiskAvatar().$this->getPathAvatar().$avatar) && !is_null($avatar)) {
-            return asset($this->getPathAvatar().$avatar);
+        if (Storage::exists($this->getDiskAvatar() . $this->getPathAvatar() .$avatar) && !is_null($avatar)) {
+            return asset($this->getPathAvatar() . $avatar);
         }
 
         // если аватар не найден или не задавался
@@ -165,8 +165,8 @@ class SystemUsers extends Model
         $res = (is_null($id)) ? [] : SystemUsers::findOrFail($id)->toArray();
         $avatar = (isset($res['user_avatar'])) ? $res['user_avatar'] : null;
         // если файл аватар существует
-        if (Storage::exists($this->getDiskAvatar().$this->getPathAvatar().$avatar) && !is_null($avatar)) {
-            Storage::delete($this->getDiskAvatar().$this->getPathAvatar().$avatar);
+        if (Storage::exists($this->getDiskAvatar() . $this->getPathAvatar() .$avatar) && !is_null($avatar)) {
+            Storage::delete($this->getDiskAvatar() . $this->getPathAvatar() .$avatar);
             return true;
         }
 
@@ -233,8 +233,8 @@ class SystemUsers extends Model
         $res = (is_null($id)) ? [] : SystemUsers::findOrFail($id)->toArray();
         $avatar = (isset($res['user_avatar'])) ? $res['user_avatar'] : null;
         // если файл аватар существует
-        if (Storage::exists($this->getDiskAvatar().$this->getPathAvatar().$avatar) && !is_null($avatar)) {
-            Storage::delete($this->getDiskAvatar().$this->getPathAvatar().$avatar);
+        if (Storage::exists($this->getDiskAvatar() . $this->getPathAvatar() .$avatar) && !is_null($avatar)) {
+            Storage::delete($this->getDiskAvatar() . $this->getPathAvatar() .$avatar);
             return true;
         } else {
             return false;

@@ -1,10 +1,10 @@
 <?php
 
-namespace Svr\Core\Controlles\System;
+namespace Svr\Core\Controllers;
 
-use Svr\Core\Models\System\SystemRoles;
-use Svr\Core\Models\System\SystemUsers;
-use Svr\Core\Models\System\SystemUsersRoles;
+use Svr\Core\Models\SystemRoles;
+use Svr\Core\Models\SystemUsers;
+use Svr\Core\Models\SystemUsersRoles;
 use Svr\Core\Enums\SystemSexEnum;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;

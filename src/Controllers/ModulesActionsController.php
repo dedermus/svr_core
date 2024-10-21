@@ -1,9 +1,9 @@
 <?php
 
-namespace Svr\Core\Controlles\System;
+namespace Svr\Core\Controllers;
 
-use Svr\Core\Models\System\SystemModules;
-use Svr\Core\Models\System\SystemModulesActions;
+use Svr\Core\Models\SystemModules;
+use Svr\Core\Models\SystemModulesActions;
 use Svr\Core\Enums\SystemStatusEnum;
 use Illuminate\Support\Carbon;
 use OpenAdminCore\Admin\Controllers\AdminController;

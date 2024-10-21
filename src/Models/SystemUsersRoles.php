@@ -1,6 +1,6 @@
 <?php
 
-namespace Svr\Core\Models\System;
+namespace Svr\Core\Models;
 
 use Svr\Core\Traits\GetEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

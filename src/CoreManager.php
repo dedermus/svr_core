@@ -6,13 +6,13 @@ use OpenAdminCore\Admin\Admin;
 use OpenAdminCore\Admin\Auth\Database\Menu;
 use OpenAdminCore\Admin\Auth\Database\Permission;
 use OpenAdminCore\Admin\Extension;
-use Svr\Core\Controlles\System\ModulesActionsController;
-use Svr\Core\Controlles\System\ModulesController;
-use Svr\Core\Controlles\System\RolesController;
-use Svr\Core\Controlles\System\SettingsController;
-use Svr\Core\Controlles\System\UsersController;
-use Svr\Core\Controlles\System\UsersNotificationsMessagesController;
-use Svr\Core\Controlles\System\UsersTokensController;
+use Svr\Core\Controllers\ModulesActionsController;
+use Svr\Core\Controllers\ModulesController;
+use Svr\Core\Controllers\RolesController;
+use Svr\Core\Controllers\SettingsController;
+use Svr\Core\Controllers\UsersController;
+use Svr\Core\Controllers\UsersNotificationsMessagesController;
+use Svr\Core\Controllers\UsersTokensController;
 
 class CoreManager extends Extension
 {
