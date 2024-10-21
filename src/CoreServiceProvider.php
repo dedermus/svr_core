@@ -9,7 +9,7 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * {@inheritdoc}
      */
-    public function boot(SvrCore $extension)
+    public function boot($extension): void
     {
         // зарегистрировать переводы
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'svr-core-lang');
@@ -29,5 +29,4 @@ class CoreServiceProvider extends ServiceProvider
 
         CoreManager::boot();
     }
-
 }
