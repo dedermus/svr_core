@@ -495,7 +495,7 @@ class UsersController extends AdminController
                 $model->userUpdate(request());
             }
 
-            return redirect(admin_url('svr_users'));
+            return redirect(admin_url('core/users'));
         });
 
         return $form;

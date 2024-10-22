@@ -279,7 +279,7 @@ class RolesController extends AdminController
             {
                 $model->roleUpdate(request());
             }
-            return redirect(admin_url('svr_roles'));
+            return redirect(admin_url('core/roles'));
         });
 
         return $form;

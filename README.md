@@ -34,6 +34,17 @@ Import extend for open-admin
 ------------
 `php artisan admin:import svr-core`
 
+
+Так же в файле `config/filesystems.php` добавляем символьную ссылку на папку links:
+------------
+`public_path('images') => storage_path('app/public/images'),`
+
+После этого с консоли вводим команду:
+------------
+```
+php artisan storage:link
+```
+
 Реализованы кастомные поля и методы:
 
 ### Кастомный вывод даты в колонке grid
