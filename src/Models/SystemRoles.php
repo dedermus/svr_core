@@ -162,8 +162,8 @@ class SystemRoles extends Model
 
         // role_name_short - Короткое название роли
         $request->validate(
-            ['role_name_long' => 'required|string|min:3|max:32'],
-            ['role_name_long' => trans('svr-core-lang::validation')],
+            ['role_name_short' => 'required|string|min:3|max:32'],
+            ['role_name_short' => trans('svr-core-lang::validation')],
         );
 
         // role_slug - Слаг для роли (уникальный идентификатор)
