@@ -298,8 +298,9 @@ class SystemUsers extends Model
         // получаем массив полей и значений из формы
         $data = $request->all();
         $data['user_avatar'] = $user_avatar;
+        if (!isset($data[$this->primaryKey])) return;
         // получаем id
-        $id = (isset($data[$this->primaryKey])) ? $data[$this->primaryKey] : null;
+        $id = $data[$this->primaryKey];
         // готовим сущность для обновления
         $modules_data = $this->find($id);
         // обновляем запись

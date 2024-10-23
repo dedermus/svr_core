@@ -94,8 +94,9 @@ class SystemModulesActions extends Model
         $this->rules($request);
         // получаем массив полей и значений и з формы
         $data = $request->all();
+        if (!isset($data[$this->primaryKey])) return;
         // получаем id
-        $id = (isset($data[$this->primaryKey])) ? $data[$this->primaryKey] : null;
+        $id = $data[$this->primaryKey];
         // готовим сущность для обновления
         $modules_data = $this->find($id);
         // обновляем запись

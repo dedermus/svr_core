@@ -97,11 +97,8 @@ class SystemRoles extends Model
     public function roleCreate($request): void
     {
         $this->rules($request);
-        $this->fill($request->all());
-        $this->save();
-        $role_data = $this->find($this->getKey()); // получим данные по новой записи
         $data = $request->all();
-
+        $role_data = self::create($data);
         if(isset($data['role_rights_list']) && $role_data)
         {
             SystemRolesRights::roleRightsStore($role_data, $data['role_rights_list']);
@@ -118,16 +115,16 @@ class SystemRoles extends Model
     public function roleUpdate($request): void
     {
         // валидация
-        self::rules($request);
+        $this->rules($request);
         // получаем массив полей и значений и з формы
         $data = $request->all();
+        if (!isset($data[$this->primaryKey])) return;
         // получаем id
-        $id = (isset($data[$this->primaryKey])) ? $data[$this->primaryKey] : null;
+        $id = $data[$this->primaryKey];
         // готовим сущность для обновления
-        $modules_data = $this->find($id);
+        $role_data = $this->find($id);
         // обновляем запись
-        $modules_data->update($data);
-        $role_data = $this->findOrFail($id);
+        $role_data->update($data);
         // обновим связь прав и ролей
         SystemRolesRights::roleRightsStore($role_data, $data['role_rights_list']);
     }
