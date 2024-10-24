@@ -258,17 +258,17 @@ class UsersController extends AdminController
         return $grid;
     }
 
-	/**
-	 * Создайте шоу-конструктор для детального просмотра.
-	 *
-	 * @param mixed $id
-	 *
-	 * @return Show
-	 */
-	protected function detail(mixed $id): Show
+    /**
+     * Создайте шоу-конструктор для детального просмотра.
+     *
+     * @param mixed $id
+     *
+     * @return Show
+     */
+    protected function detail(mixed $id): Show
     {
         $model = $this->systemUsers;
-		$show = new Show(SystemUsers::findOrFail($id));
+        $show = new Show(SystemUsers::findOrFail($id));
         $show->field('user_id', trans('svr-core-lang::svr.user.user_id'));
         $show->field('user_base_index', trans('svr-core-lang::svr.user.base_index'));
         $show->field('user_guid', trans('svr-core-lang::svr.user.user_guid'));
@@ -282,7 +282,8 @@ class UsersController extends AdminController
         })->label();
         $show->field('user_avatar', trans('svr-core-lang::svr.user.user_avatar'))
             ->unescape()->as(function ($user_avatar) use ($model) {
-                return '<a href="'.$model->getUrlAvatar($user_avatar).'" target="_blank"><img alt="" src="'.$model->getUrlAvatar($user_avatar).'"/></a>';
+                return '<a href="'.$model->getUrlAvatar($user_avatar).'" target="_blank">
+                <img style="min-width: 200px !important; max-width: 320px !important;" alt="" src="'.$model->getUrlAvatar($user_avatar).'"/></a>';
             });
         $show->field('user_sex', trans('svr-core-lang::svr.user.user_sex'));
         $show->field('user_email', trans('svr-core-lang::svr.user.user_email'));
@@ -305,8 +306,8 @@ class UsersController extends AdminController
         $show->field('user_date_update', trans('svr-core-lang::svr.user.user_date_update'));
         $show->field('user_date_block', trans('svr-core-lang::svr.user.user_date_block'));
 
-		return $show;
-	}
+        return $show;
+    }
 
     /**
      * Форма для создания/редактирования
@@ -321,9 +322,7 @@ class UsersController extends AdminController
         $model = $this->systemUsers;
 
         $form = new Form($this->systemUsers);
-        if ($model->user_avatar) {
-            $model->user_avarar = 'sdfsdfsdf';
-        }
+
         // 	Инкремент
         $form->display('user_id', trans('svr-core-lang::svr.user.user_id'))
             -> help(__('user_id'));
@@ -337,7 +336,7 @@ class UsersController extends AdminController
 
         // GUID пользователя
         $form->text('user_guid', trans('svr-core-lang::svr.user.user_guid'))
-            ->readonly()
+            //  ->disable()
             ->help(__('user_guid'));
 
         // Имя пользователя
@@ -366,6 +365,7 @@ class UsersController extends AdminController
             ->options(function(){
                 return SystemRoles::All(['role_slug', 'role_id'])->pluck('role_slug', 'role_id');
             });
+        $form->ignore(['user_roles_list']);
 
         // Пароль пользователя
         $form->password('user_password', trans('svr-core-lang::svr.user.user_password'))
@@ -462,7 +462,6 @@ class UsersController extends AdminController
             ->help(__('user_date_block'))
             ->disable();
 
-
         // Дата создания
         $form->datetime('created_at', trans('svr-core-lang::svr.user.created_at'))
             ->help(__('created_at'))
@@ -481,7 +480,10 @@ class UsersController extends AdminController
             {
                 $form->user_password = Hash::make($form->user_password);
                 $form->user_guid = Str::uuid();
-                $form->user_avatar = $form->user_sex.'_1.png';
+                request()->request->add([
+                    'user_password' => $form->user_password,
+                    'user_guid' => $form->user_guid,
+                ]);
                 $model->userCreate(request());
             }
             // обновляется текущая страница формы.
@@ -490,12 +492,13 @@ class UsersController extends AdminController
                 // если пароль был изменен
                 if ($form->user_password && $form->model()->user_password != $form->user_password) {
                     $form->user_password = Hash::make($form->user_password);
+                    request()->request->add([
+                        'user_password' => $form->user_password,
+                    ]);
                 }
-                $form->user_avatar = $form->user_sex.'_1.png';
                 $model->userUpdate(request());
             }
-
-            return redirect(admin_url('core/users'));
+            return redirect(admin_url($form->resource(0)));
         });
 
         return $form;

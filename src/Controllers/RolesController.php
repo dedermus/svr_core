@@ -255,6 +255,7 @@ class RolesController extends AdminController
             ->options(function(){
                 return SystemModulesActions::All(['right_name', 'right_id'])->pluck('right_name', 'right_id');
             });
+        $form->ignore(['role_rights_list']);
 
         // Дата создания
         $form->datetime('created_at', trans('svr-core-lang::svr.role.created_at'))
@@ -279,7 +280,6 @@ class RolesController extends AdminController
             {
                 $model->roleUpdate(request());
             }
-            return redirect(admin_url('core/roles'));
         });
 
         return $form;

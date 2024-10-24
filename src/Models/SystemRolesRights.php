@@ -83,35 +83,35 @@ class SystemRolesRights extends Model
 		}
 	}
 
-	/**
-	 * Установка прав роли
+    /**
+     * Установка прав роли
      *
      * @param $role_data
      * @param $rights_list
      *
      * @return void
      */
-	public static function roleRightsStore($role_data, $rights_list): void
+    public static function roleRightsStore($role_data, $rights_list): void
     {
-		self::where('role_slug', $role_data->role_slug)->delete();
+        self::where('role_slug', $role_data->role_slug)->delete();
 
-		if($rights_list && is_array($rights_list) && count($rights_list) > 0)
-		{
-			foreach ($rights_list as $right_id)
-			{
-				if((int)$right_id > 0)
-				{
-					$right_data	= SystemModulesActions::find($right_id);
+        if($rights_list->role_rights_list && is_array($rights_list->role_rights_list) && count($rights_list->role_rights_list) > 0)
+        {
+            foreach ($rights_list->role_rights_list as $right_id)
+            {
+                if((int)$right_id > 0)
+                {
+                    $right_data	= SystemModulesActions::find($right_id);
 
-					if($right_data)
-					{
-						self::firstOrCreate([
-							'role_slug'		=> $role_data->role_slug,
-							'right_slug'	=> $right_data->right_slug,
-						]);
-					}
-				}
-			}
-		}
-	}
+                    if($right_data)
+                    {
+                        self::firstOrCreate([
+                            'role_slug'		=> $role_data->role_slug,
+                            'right_slug'	=> $right_data->right_slug,
+                        ]);
+                    }
+                }
+            }
+        }
+    }
 }
