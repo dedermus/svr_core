@@ -145,14 +145,14 @@ class SystemUsersToken extends Model
         // id - Первичный ключ
         if (!is_null($id)) {
             $request->validate(
-                [$this->primaryKey => 'required|exists:.'.$this->getTable().','.$this->primaryKey],
+                [$this->primaryKey => 'required|exists:'.$this->getTable().','.$this->primaryKey],
                 [$this->primaryKey => trans('svr-core-lang::validation')],
             );
         }
 
         // user_id - Идентификатор пользователя
         $request->validate(
-            ['user_id' => 'required|exists:.'.$systemUser->getTable().','.$systemUser->getPrimaryKey()],
+            ['user_id' => 'required|exists:'.$systemUser->getTable().','.$systemUser->getPrimaryKey()],
             ['user_id' => trans('svr-core-lang::validation')],
         );
 

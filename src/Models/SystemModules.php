@@ -128,7 +128,7 @@ class SystemModules extends Model
         // id - Первичный ключ
         if (!is_null($id)) {
             $request->validate(
-                [$this->primaryKey => 'required|exists:.'.$this->getTable().','.$this->primaryKey],
+                [$this->primaryKey => 'required|exists:'.$this->getTable().','.$this->primaryKey],
                 [$this->primaryKey => trans('svr-core-lang::validation.required')],
             );
         }
