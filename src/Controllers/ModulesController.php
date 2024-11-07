@@ -187,18 +187,22 @@ class ModulesController extends AdminController
 
         // Название модуля
         $form->text('module_name', trans('svr-core-lang::svr.module.module_name'))
+            ->required()
             ->help(__('module_name'));
 
         // Описание модуля
         $form->text('module_description', trans('svr-core-lang::svr.module.module_description'))
+            ->required()
             ->help(__('module_description'));
 
         // Имя класса модуля
         $form->text('module_class_name', trans('svr-core-lang::svr.module.module_class_name'))
+            ->required()
             ->help(__('module_class_name'));
 
         // Слаг модуля
         $form->text('module_slug', trans('svr-core-lang::svr.module.module_slug'))
+            ->required()
             ->help(__('module_slug'));
 
         // Дата создания

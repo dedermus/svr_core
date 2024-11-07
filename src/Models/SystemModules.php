@@ -189,7 +189,7 @@ class SystemModules extends Model
 
         return [
             $this->primaryKey => [
-                'required',
+                $request->isMethod('put') ? 'required' : '',
                 Rule::exists('.'.$this->getTable(), $this->primaryKey),
             ],
             'module_name' => 'required|string|min:2|max:64',
