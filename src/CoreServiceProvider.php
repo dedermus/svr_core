@@ -5,7 +5,7 @@ namespace Svr\Core;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
 use Svr\Core\Middleware\ApiValidationErrors;
-
+use Svr\Core\Exceptions\ExceptionHandler;
 class CoreServiceProvider extends ServiceProvider
 {
     /**
@@ -37,6 +37,9 @@ class CoreServiceProvider extends ServiceProvider
         // Регистрируем глобально миддлвар
         $this->registerMiddleware(ApiValidationErrors::class);
 
+        // Регистрируем глобального  обработчик исключений
+         $this->withExceptions(new ExceptionHandler());
+
         CoreManager::boot();
     }
 
@@ -49,5 +52,29 @@ class CoreServiceProvider extends ServiceProvider
     {
         $kernel = $this->app[Kernel::class];
         $kernel->appendMiddlewareToGroup('api', $middleware); // доббавить мидлвар в группу api
+    }
+
+    /**
+     * Регистрация обработчика исключений приложения.
+     *
+     * @param callable|null $using
+     * @return $this
+     *
+     */
+    protected function withExceptions(?callable $using = null)
+    {
+        $this->app->singleton(
+            \Illuminate\Contracts\Debug\ExceptionHandler::class,
+            \Illuminate\Foundation\Exceptions\Handler::class
+        );
+
+        $using ??= fn () => true;
+
+        $this->app->afterResolving(
+            \Illuminate\Foundation\Exceptions\Handler::class,
+            fn ($handler) => $using(new \Illuminate\Foundation\Configuration\Exceptions($handler)),
+        );
+
+        return $this;
     }
 }

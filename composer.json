@@ -11,9 +11,14 @@
         }
     ],
     "autoload": {
+        "classmap": [
+            "src/",
+            "src/Exceptions"
+        ],
         "psr-4": {
             "Svr\\Core\\": "src/",
-            "Svr\\Core\\Seeders\\": "database/seeders/"
+            "Svr\\Core\\Seeders\\": "database/seeders/",
+            "Svr\\Core\\Exceptions\\": "src/Exceptions"
         },
         "files": ["src/bootstrap.php"]
     },
