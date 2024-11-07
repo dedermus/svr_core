@@ -4,6 +4,8 @@ namespace Svr\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemStatusEnum;
 
 /**
@@ -94,11 +96,12 @@ class SystemUsersToken extends Model
      *
      * @return void
      */
-    public function settingCreate($request): void
+    public function settingCreate(Request $request): void
     {
-        $this->rules($request);
-        $this->fill($request->all());
-        $this->save();
+        $this->authorize();
+
+        $this->validateRequest($request);
+        $this->fill($request->all())->save();
     }
 
     /**
@@ -107,128 +110,96 @@ class SystemUsersToken extends Model
      *
      * @return void
      */
-    public function settingUpdate($request): void
+    public function settingUpdate(Request $request): void
     {
-        // валидация
-        $this->rules($request);
-        // получаем массив полей и значений и з формы
+        $this->authorize();
+
+        $this->validateRequest($request);
         $data = $request->all();
-        if (!isset($data[$this->primaryKey])) return;
-        // получаем id
-        $id = $data[$this->primaryKey];
-        // готовим сущность для обновления
-        $modules_data = $this->find($id);
-        // обновляем запись
-        $modules_data->update($data);
+        $id = $data[$this->primaryKey] ?? null;
+
+        if ($id) {
+            $module = $this->find($id);
+            if ($module) {
+                $module->update($data);
+            }
+        }
     }
 
     /**
-     * Валидация входных данных
-     * @param $request
-     *
-     * @return void
+     * Определить, уполномочен ли пользователь выполнить этот запрос.
+     * @return bool
      */
-    private function rules($request): void
+    public function authorize(): bool
+    { echo 2;
+        return auth()->check();
+    }
+
+    /**
+     * Валидация запроса
+     * @param Request $request
+     */
+    private function validateRequest(Request $request)
     {
-        // модель
+        $rules = $this->getValidationRules($request);
+        $messages = $this->getValidationMessages();
+        $request->validateWithBag('default', $rules, $messages);
+    }
+
+    /**
+     * Получить правила валидации
+     * @param Request $request
+     * @return array
+     */
+    private function getValidationRules(Request $request): array
+    {
+        $id = $request->input($this->primaryKey);
         $systemUser = new SystemUsers();
+        return [
+            $this->primaryKey => [
+                $request->isMethod('put') ? 'required' : '',
+                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+            ],
+            'user_id' => 'required|exists:.' . $systemUser->getTable() . ',' . $systemUser->getPrimaryKey(),
+            'participation_id' => 'nullable|min_digits:1|max_digits:10',
+            'token_value' => 'required|string|max:72|unique:.' . $this->getTable() . ',token_value,' . ($id ?? 'null') . ',' . $this->primaryKey,
+            'token_client_ip' => 'required|ip',
+            'token_client_agent' => 'required|string|max:256',
+            'browser_name' => 'nullable|string|max:32',
+            'browser_version' => 'nullable|string|max:32',
+            'platform_name' => 'nullable|string|max:32',
+            'platform_version' => 'nullable|string|max:32',
+            'device_type' => 'required|string|max:32',
+            'token_last_login' => 'required|min_digits:1|max_digits:10',
+            'token_last_action' => 'required|min_digits:1|max_digits:10',
+            'token_status' => [
+                'required',
+                Rule::enum(SystemStatusEnum::class)
+            ],
+        ];
+    }
 
-        // получаем поля со значениями
-        $data = $request->all();
-
-        // лист ENUM
-        $enum_list = implode(',', SystemStatusEnum::get_option_list());
-
-        // получаем значение первичного ключа
-        $id = (isset($data[$this->primaryKey])) ? $data[$this->primaryKey] : null;
-
-        // id - Первичный ключ
-        if (!is_null($id)) {
-            $request->validate(
-                [$this->primaryKey => 'required|exists:.'.$this->getTable().','.$this->primaryKey],
-                [$this->primaryKey => trans('svr-core-lang::validation')],
-            );
-        }
-
-        // user_id - Идентификатор пользователя
-        $request->validate(
-            ['user_id' => 'required|exists:'.$systemUser->getTable().','.$systemUser->getPrimaryKey()],
-            ['user_id' => trans('svr-core-lang::validation')],
-        );
-
-        // participation_id - Идентификатор типа привязки
-        $request->validate(
-            ['participation_id' => 'nullable|min_digits:1|max_digits:10'],
-            ['participation_id' => trans('svr-core-lang::validation')],
-        );
-
-        // token_value - Значение токена (уникальный идентификатор)
-        $unique = is_null($id)
-            ? '|unique:.'.$this->getTable().',token_value,null,'.$this->primaryKey
-            : '|unique:.'.$this->getTable().',token_value,'.$id.','.$this->primaryKey;
-        $request->validate(
-            ['token_value' => 'required|string|max:72'.$unique],
-            ['token_value' => trans('svr-core-lang::validation')],
-        );
-
-        // token_client_ip - IP адрес пользователя
-        $request->validate(
-            ['token_client_ip' => 'required|ip'],
-            ['token_client_ip' => trans('svr-core-lang::validation')],
-        );
-
-        // token_client_agent - Агент пользователя
-        $request->validate(
-            ['token_client_agent' => 'required|string|max:256'],
-            ['token_client_agent' => trans('svr-core-lang::validation')],
-        );
-
-        // browser_name - Название браузера
-        $request->validate(
-            ['browser_name' => 'nullable|string|max:32'],
-            ['browser_name' => trans('svr-core-lang::validation')],
-        );
-
-        // browser_version - Версия браузера
-        $request->validate(
-            ['browser_version' => 'nullable|string|max:32'],
-            ['browser_version' => trans('svr-core-lang::validation')],
-        );
-
-        // platform_name - Имя платформы
-        $request->validate(
-            ['platform_name' => 'nullable|string|max:32'],
-            ['platform_name' => trans('svr-core-lang::validation')],
-        );
-
-        // platform_version - Версия платформы
-        $request->validate(
-            ['platform_version' => 'nullable|string|max:32'],
-            ['platform_version' => trans('svr-core-lang::validation')],
-        );
-
-        // device_type - Тип устроиства
-        $request->validate(
-            ['device_type' => 'required|string|max:32'],
-            ['device_type' => trans('svr-core-lang::validation')],
-        );
-
-        // token_last_login - Таймстамп последнего входа
-        $request->validate(
-            ['token_last_login' => 'required|min_digits:1|max_digits:10'],
-            ['token_last_login' => trans('svr-core-lang::validation')],
-        );
-
-        // token_last_action - Таймстамп последнего действия
-        $request->validate(
-            ['token_last_action' => 'required|min_digits:1|max_digits:10'],
-            ['token_last_action' => trans('svr-core-lang::validation')],
-        );
-
-        // token_status - Статус токена
-        $request->validate(
-            ['token_status' => 'required|in:'.$enum_list],
-            ['token_status' => trans('svr-core-lang::validation')],
-        );
+    /**
+     * Получить сообщения об ошибках валидации
+     * @return array
+     */
+    private function getValidationMessages(): array
+    {
+        return [
+            $this->primaryKey => trans('svr-core-lang::validation'),
+            'user_id' => trans('svr-core-lang::validation'),
+            'participation_id' => trans('svr-core-lang::validation'),
+            'token_value' => trans('svr-core-lang::validation'),
+            'token_client_ip' => trans('svr-core-lang::validation'),
+            'token_client_agent' => trans('svr-core-lang::validation'),
+            'browser_name' => trans('svr-core-lang::validation'),
+            'browser_version' => trans('svr-core-lang::validation'),
+            'platform_name' => trans('svr-core-lang::validation'),
+            'platform_version' => trans('svr-core-lang::validation'),
+            'device_type' => trans('svr-core-lang::validation'),
+            'token_last_login' => trans('svr-core-lang::validation'),
+            'token_last_action' => trans('svr-core-lang::validation'),
+            'token_status' => trans('svr-core-lang::validation'),
+        ];
     }
 }

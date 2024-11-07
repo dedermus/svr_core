@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Created seeds for table system.system_roles
  */
-class table_data_system_roles extends Seeder
+class SystemRolesSeeder extends Seeder
 {
     /**
      * Run the database seeds.

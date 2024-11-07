@@ -276,7 +276,7 @@ class UsersTokensController extends AdminController
         $form->text('platform_version', trans('svr-core-lang::svr.users_token.platform_version'))
             ->help(__('platform_version'));
         // Тип устроиства
-        $form->text('device_type', trans('svr-core-lang::svr.users_token.'))
+        $form->text('device_type', trans('svr-core-lang::svr.users_token.device_type'))
             ->default('desktop')
             ->required()
             ->help(__('device_type'));

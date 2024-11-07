@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Created seeds for table system.system_settings
  */
-class table_data_system_settings extends Seeder
+class SystemSettingsSeeder extends Seeder
 {
     /**
      * Run the database seeds.

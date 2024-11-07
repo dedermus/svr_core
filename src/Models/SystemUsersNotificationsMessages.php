@@ -4,6 +4,10 @@ namespace Svr\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Svr\Core\Enums\SystemNotificationsTypesEnum;
+use Svr\Core\Enums\SystemStatusEnum;
 
 /**
  * Модель Setting
@@ -85,15 +89,14 @@ class SystemUsersNotificationsMessages extends Model
     /**
      * Создать запись
      *
-     * @param $request
+     * @param Request $request
      *
      * @return void
      */
-    public function notificationsCreate($request): void
+    public function notificationsCreate(Request $request): void
     {
-        $this->rules($request);
-        $this->fill($request->all());
-        $this->save();
+        $this->validateRequest($request);
+        $this->fill($request->all())->save();
     }
 
     /**
@@ -102,95 +105,86 @@ class SystemUsersNotificationsMessages extends Model
      *
      * @return void
      */
-    public function notificationsUpdate($request): void
+    public function notificationsUpdate(Request $request): void
     {
-        // валидация
-        $this->rules($request);
-        // получаем массив полей и значений и з формы
+        $this->validateRequest($request);
         $data = $request->all();
-        if (!isset($data[$this->primaryKey])) return;
-        // получаем id
-        $id = $data[$this->primaryKey];
-        // готовим сущность для обновления
-        $modules_data = $this->find($id);
-        // обновляем запись
-        $modules_data->update($data);
+        $id = $data[$this->primaryKey] ?? null;
+
+        if ($id) {
+            $module = $this->find($id);
+            if ($module) {
+                $module->update($data);
+            }
+        }
     }
 
     /**
-     * Валидация входных данных
-     * @param $request
-     *
-     * @return void
+     * Валидация запроса
+     * @param Request $request
      */
-    private function rules($request): void
+    private function validateRequest(Request $request)
     {
-        // получаем поля со значениями
-        $data = $request->all();
+        $rules = $this->getValidationRules($request);
+        $messages = $this->getValidationMessages();
+        $request->validateWithBag('default', $rules, $messages);
+    }
 
-        // получаем значение первичного ключа
-        $id = (isset($data[$this->primaryKey])) ? $data[$this->primaryKey] : null;
+    /**
+     * Получить правила валидации
+     * @param Request $request
+     * @return array
+     */
+    private function getValidationRules(Request $request): array
+    {
+        $id = $request->input($this->primaryKey);
 
-        // id - Первичный ключ
-        if (!is_null($id)) {
-            $request->validate(
-                [$this->primaryKey => 'required|exists:.'.$this->getTable().','.$this->primaryKey],
-                [$this->primaryKey => trans('svr-core-lang::validation.required')],
-            );
-        }
+        return [
+            $this->primaryKey => [
+                $request->isMethod('put') ? 'required' : '',
+                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+            ],
+            'notification_type' => [
+                'required',
+                Rule::enum(SystemNotificationsTypesEnum::class)
+            ],
+            'message_description' => 'required|string|max:255',
+            'message_title_front' => 'required|string|max:55',
+            'message_title_email' => 'nullable|string|max:55',
+            'message_text_front' => 'required|string',
+            'message_text_email' => 'nullable|string',
+            'message_status_front' => [
+                'required',
+                Rule::enum(SystemStatusEnum::class)
+            ],
+            'message_status_email' => [
+                'required',
+                Rule::enum(SystemStatusEnum::class)
+            ],
+            'message_status' => [
+                'required',
+                Rule::enum(SystemStatusEnum::class)
+            ],
+        ];
+    }
 
-        // notification_type - 	Тип уведомления
-        $request->validate(
-            ['notification_type' => 'required|string|max:255'],
-            ['notification_type' => trans('svr-core-lang::validation')],
-        );
-
-        // message_description - Системное описание
-        $request->validate(
-            ['message_description' => 'required|string|max:255'],
-            ['message_description' => trans('svr-core-lang::validation')],
-        );
-
-        // message_title_front - Заголовок сообщения для отправки на фронт
-        $request->validate(
-            ['message_title_front' => 'required|string|max:55'],
-            ['message_title_front' => trans('svr-core-lang::validation')],
-        );
-
-        // message_title_email - Заголовок сообщения электронного письма
-        $request->validate(
-            ['message_title_email' => 'nullable|string|max:55'],
-            ['message_title_email' => trans('svr-core-lang::validation')],
-        );
-
-        // message_text_front - Текст сообщения для отправки на фронт
-        $request->validate(
-            ['message_text_front' => 'required|string'],
-            ['message_text_front' => trans('svr-core-lang::validation')],
-        );
-
-        // message_text_email - Текст сообщения электронного письма
-        $request->validate(
-            ['message_text_email' => 'nullable|string'],
-            ['message_text_email' => trans('svr-core-lang::validation')],
-        );
-
-        // message_status_front - Флаг работы с фронтом
-        $request->validate(
-            ['message_status_front' => 'required|string'],
-            ['message_status_front' => trans('svr-core-lang::validation')],
-        );
-
-        // message_status_email - Флаг работы с электронной почтой
-        $request->validate(
-            ['message_status_email' => 'required|string'],
-            ['message_status_email' => trans('svr-core-lang::validation')],
-        );
-
-        // message_status - Статус уведомления
-        $request->validate(
-            ['message_status' => 'required|string'],
-            ['message_status' => trans('svr-core-lang::validation')],
-        );
+    /**
+     * Получить сообщения об ошибках валидации
+     * @return array
+     */
+    private function getValidationMessages(): array
+    {
+        return [
+            $this->primaryKey => trans('svr-core-lang::validation.required'),
+            'notification_type' => trans('svr-core-lang::validation'),
+            'message_description' => trans('svr-core-lang::validation'),
+            'message_title_front' => trans('svr-core-lang::validation'),
+            'message_title_email' => trans('svr-core-lang::validation'),
+            'message_text_front' => trans('svr-core-lang::validation'),
+            'message_text_email' => trans('svr-core-lang::validation'),
+            'message_status_front' => trans('svr-core-lang::validation'),
+            'message_status_email' => trans('svr-core-lang::validation'),
+            'message_status' => trans('svr-core-lang::validation'),
+        ];
     }
 }

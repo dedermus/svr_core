@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Created seeds for table system.system_users_notifications_messages
  */
-class table_data_system_users_notifications_messages extends Seeder
+class SystemUsersNotificationsMessagesSeeder extends Seeder
 {
     /**
      * Run the database seeds.

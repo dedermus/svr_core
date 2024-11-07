@@ -6,7 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class table_data_system_users extends Seeder
+class SystemUsersSeeder extends Seeder
 {
     /**
      * Run the database seeds.

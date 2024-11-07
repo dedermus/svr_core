@@ -19,6 +19,7 @@ class RolesController extends AdminController
 {
     /**
      * Экземпляр класса модели
+     *
      * @var SystemRoles
      */
     private SystemRoles $systemRoles;
@@ -56,7 +57,7 @@ class RolesController extends AdminController
     /**
      * Интерфейс детального просмотра.
      *
-     * @param string $id
+     * @param string  $id
      * @param Content $content
      *
      * @return Content
@@ -87,7 +88,7 @@ class RolesController extends AdminController
     /**
      * Интерфейс редактирования записи.
      *
-     * @param string $id
+     * @param string  $id
      * @param Content $content
      *
      * @return Content
@@ -107,7 +108,7 @@ class RolesController extends AdminController
      */
     protected function grid(): Grid
     {
-        $grid = Admin::grid(SystemRoles::class, function(Grid $grid) {
+        $grid = Admin::grid(SystemRoles::class, function (Grid $grid) {
             $systemRoles = $this->systemRoles;
             $grid->model()->orderBy('role_id', 'asc');
 
@@ -148,20 +149,20 @@ class RolesController extends AdminController
 
             // Дата создания
             $grid->column('created_at', trans('svr-core-lang::svr.role.created_at'))
-                ->help(__('created_at'))
-                ->display(function ($value) use ($systemRoles) {
-                    return Carbon::parse($value)->timezone(config('app.timezone'))->format(
+                ->display(
+                    fn($value) => Carbon::parse($value)->timezone(config('app.timezone'))->format(
                         $systemRoles->getDateFormat()
-                    );
-                })->sortable();
+                    )
+                )
+                ->help(__('created_at'))
+                ->sortable();
 
             // Дата обновления
             $grid->column('updated_at', trans('svr-core-lang::svr.role.updated_at'))
-                ->display(function ($value) use ($systemRoles) {
-                    return Carbon::parse($value)->timezone(config('app.timezone'))->format(
-                        $systemRoles->getDateFormat()
-                    );
-                })->help(__('updated_at'))
+                ->display(fn($value) => Carbon::parse($value)->timezone(config('app.timezone'))->format(
+                    $systemRoles->getDateFormat()
+                ))
+                ->help(__('updated_at'))
                 ->sortable();
         });
 
@@ -185,10 +186,9 @@ class RolesController extends AdminController
         $show->field('role_slug', trans('svr-core-lang::svr.role.role_slug'));
         $show->field('role_status', trans('svr-core-lang::svr.role.role_status'));
         $show->field('role_status_delete', trans('svr-core-lang::svr.role.role_status_delete'));
-        $show->field('role_status_delete', trans('svr-core-lang::svr.role.role_status_delete'));
         $show->field('role_rights_list', trans('svr-core-lang::svr.role.role_rights_list'))->as(function () use ($id) {
-            return SystemModulesActions::All(['right_id', 'right_slug'])
-                ->whereIn('right_id', systemRolesRights::roleRightsGet($id))
+            return SystemModulesActions::all(['right_id', 'right_slug'])
+                ->whereIn('right_id', SystemRolesRights::roleRightsGet($id))
                 ->pluck('right_slug');
         })->label();
         $show->field('created_at', trans('svr-core-lang::svr.role.created_at'));
@@ -206,17 +206,15 @@ class RolesController extends AdminController
      */
     protected function form($id = false): Form
     {
-        $model = $this->systemRoles;
-
-        $form			= new Form($this->systemRoles);
+        $form = new Form($this->systemRoles);
 
         // 	Инкремент
         $form->display('role_id', trans('svr-core-lang::svr.role.role_id'))
-            -> help(__('role_id'));
+            ->help(__('role_id'));
 
         // 	Инкремент
-		$form->hidden('role_id', trans('svr-core-lang::svr.role.role_id'))
-            -> help(__('role_id'));
+        $form->hidden('role_id', trans('svr-core-lang::svr.role.role_id'))
+            ->help(__('role_id'));
 
         // Длинное название
         $form->text('role_name_long', trans('svr-core-lang::svr.role.role_name_long'))
@@ -251,10 +249,9 @@ class RolesController extends AdminController
         // Права роли
         $form->multipleSelect('role_rights_list', trans('svr-core-lang::svr.role.role_rights_list'))
             ->help(__('role_rights_list'))
-			->value(systemRolesRights::roleRightsGet($id))
-            ->options(function(){
-                return SystemModulesActions::All(['right_name', 'right_id'])->pluck('right_name', 'right_id');
-            });
+            ->value(SystemRolesRights::roleRightsGet($id))
+            ->options(fn() => SystemModulesActions::all(['right_name', 'right_id'])->pluck('right_name', 'right_id'));
+
         $form->ignore(['role_rights_list']);
 
         // Дата создания
@@ -268,20 +265,22 @@ class RolesController extends AdminController
             ->help(__('updated_at'));
 
         // обработка формы
-        $form->saving(function (Form $form) use ($model)
-        {
-            // создается текущая страница формы.
-            if ($form->isCreating())
-            {
-                $model->roleCreate(request());
-            }
-            // обновляется текущая страница формы.
-            if ($form->isEditing())
-            {
-                $model->roleUpdate(request());
-            }
-        });
+        $form->saving(fn(Form $form) => $this->handleFormSaving($form));
 
         return $form;
+    }
+
+    /**
+     * Обработка сохранения формы.
+     *
+     * @param Form $form
+     */
+    private function handleFormSaving(Form $form): void
+    {
+        if ($form->isCreating()) {
+            $this->systemRoles->roleCreate(request());
+        } elseif ($form->isEditing()) {
+            $this->systemRoles->roleUpdate(request());
+        }
     }
 }

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Created seeds for table system.system_modules_actions
  */
-class table_data_system_modules_actions extends Seeder
+class SystemModulesActionsSeeder extends Seeder
 {
     /**
      * Run the database seeds.

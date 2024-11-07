@@ -2,7 +2,9 @@
 
 namespace Svr\Core;
 
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
+use Svr\Core\Middleware\ApiValidationErrors;
 
 class CoreServiceProvider extends ServiceProvider
 {
@@ -11,6 +13,11 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function boot(SvrCore $extension): void
     {
+        // Регистрируем routs
+        $this->loadRoutesFrom(__DIR__ . '/../routes/Api/api.php');
+        $this->register();
+
+
         // зарегистрировать переводы
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'svr-core-lang');
         //зарегистрировать шаблоны пакета
@@ -27,6 +34,20 @@ class CoreServiceProvider extends ServiceProvider
             $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         }
 
+        // Регистрируем глобально миддлвар
+        $this->registerMiddleware(ApiValidationErrors::class);
+
         CoreManager::boot();
+    }
+
+    /**
+     * Регистрация Middleware
+     *
+     * @param string $middleware
+     */
+    protected function registerMiddleware($middleware)
+    {
+        $kernel = $this->app[Kernel::class];
+        $kernel->appendMiddlewareToGroup('api', $middleware); // доббавить мидлвар в группу api
     }
 }

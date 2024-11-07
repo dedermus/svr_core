@@ -2,19 +2,21 @@
 
 namespace Svr\Core\Models;
 
+use Svr\Core\Enums\SystemStatusDeleteEnum;
+use Svr\Core\Enums\SystemStatusEnum;
+use Illuminate\Validation\Rule;
 use Svr\Core\Traits\GetEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Http\Request;
 
 /**
  * Модель Roles
  */
 class SystemRoles extends Model
 {
-    use GetEnums;
-
-    use HasFactory;
+    use GetEnums, HasFactory;
 
     /**
      * Точное название таблицы с учетом схемы
@@ -27,18 +29,6 @@ class SystemRoles extends Model
      * @var string
      */
     protected $primaryKey = 'role_id';
-
-    /**
-     * Поле даты создания строки
-     * @var string
-     */
-    const CREATED_AT = 'created_at';
-
-    /**
-     * Поле даты обновления строки
-     * @var string
-     */
-    const UPDATED_AT = 'updated_at';
 
     /**
      * Поля, которые можно менять сразу массивом
@@ -54,132 +44,133 @@ class SystemRoles extends Model
         'updated_at',
     ];
 
-    protected array $dates = [
+    /**
+     * Поля дат
+     * @var array
+     */
+    protected $dates = [
         'created_at',
         'updated_at',
     ];
 
     /**
      * Формат хранения столбцов даты модели.
-     *
      * @var string
      */
     protected $dateFormat = 'Y-m-d H:i:s';
 
     /**
-     * @var bool
-     */
-    public $timestamps = true;
-
-    /**
      * A role belongs to many permissions.
-     *
      * @return BelongsToMany
      */
     public function permissions(): BelongsToMany
     {
-        return  $this->belongsToMany(
+        return $this->belongsToMany(
             SystemRolesRights::class,
             'system.system_roles',
             'role_slug',
             'role_slug',
             'role_slug',
-            'role_slug');
+            'role_slug'
+        );
     }
 
     /**
      * Создать запись
      *
-     * @param $request
+     * @param Request $request
      *
      * @return void
      */
-    public function roleCreate($request): void
+    public function roleCreate(Request $request): void
     {
-        $this->rules($request);
-        // получаем поля со значениями
-        $this->fill($request->all());
-        $this->save();
-        // получим сущность
+        $this->validateRequest($request);
+        $this->fill($request->all())->save();
         $role_data = $this->find($this->getKey());
         SystemRolesRights::roleRightsStore($role_data, $request);
     }
 
     /**
      * Обновить запись
-     *
-     * @param $request
-     *
+     * @param Request $request
      * @return void
      */
-    public function roleUpdate($request): void
+    public function roleUpdate(Request $request): void
     {
-        // валидация
-        $this->rules($request);
-        // получаем поля со значениями
+        $this->validateRequest($request);
         $data = $request->all();
-        // обновляем запись
-        $this->update();
-        // получим сущность
-        $role_data = $this->find($data[$this->primaryKey]);
-        // обновим связь прав и ролей
-        SystemRolesRights::roleRightsStore($role_data, $request);
+        $id = $data[$this->primaryKey] ?? null;
+
+        if ($id) {
+            $module = $this->find($id);
+            if ($module) {
+                $module->update($data);
+                $role_data = $this->find($data[$this->primaryKey]);
+                SystemRolesRights::roleRightsStore($role_data, $request);
+            }
+        }
     }
 
     /**
-     * Валидация входных данных
-     * @param $request
-     *
-     * @return void
+     * Валидация запроса
+     * @param Request $request
      */
-    private function rules($request): void
+    private function validateRequest(Request $request)
     {
-        // получаем поля со значениями
-        $data = $request->all();
+        $rules = $this->getValidationRules($request);
+        $messages = $this->getValidationMessages();
+        $request->validateWithBag('default', $rules, $messages);
+    }
 
-        // получаем значение первичного ключа
-        $id = (isset($data[$this->primaryKey])) ? $data[$this->primaryKey] : null;
+    /**
+     * Получить правила валидации
+     * @param Request $request
+     * @return array
+     */
+    private function getValidationRules(Request $request): array
+    {
+        $id = $request->input($this->primaryKey);
 
-        // id - Первичный ключ
-        if (!is_null($id)) {
-            $request->validate(
-                [$this->primaryKey => 'required|exists:.'.$this->getTable().','.$this->primaryKey],
-                [$this->primaryKey => trans('svr-core-lang::validation.required')],
-            );
-        }
+        return [
+            $this->primaryKey => [
+                $request->isMethod('put') ? 'required' : '',
+                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+            ],
+            'role_name_long' => 'required|string|min:3|max:64',
+            'role_name_short' => 'required|string|min:3|max:32',
+            'role_slug' => [
+                'required',
+                'string',
+                'max:32',
+                Rule::unique('.'.$this->getTable())->ignore($id, $this->primaryKey)
+            ],
+            'role_status' => [
+                'required',
+                'string',
+                'min:3',
+                'max:32',
+                Rule::enum(SystemStatusEnum::class)
+            ],
+            'role_status_delete' => [
+                'required',
+                Rule::enum(SystemStatusDeleteEnum::class)
+            ],
+        ];
+    }
 
-        // role_name_long - Длинное название
-        $request->validate(
-            ['role_name_long' => 'required|string|min:3|max:64'],
-            ['role_name_long' => trans('svr-core-lang::validation')],
-        );
-
-        // role_name_short - Короткое название роли
-        $request->validate(
-            ['role_name_short' => 'required|string|min:3|max:32'],
-            ['role_name_short' => trans('svr-core-lang::validation')],
-        );
-
-        // role_slug - Слаг для роли (уникальный идентификатор)
-        $unique = is_null($id)
-            ? '|unique:.'.$this->getTable().',role_slug,null,'.$this->primaryKey
-            : '|unique:.'.$this->getTable().',role_slug,'.$id.','.$this->primaryKey;
-
-        $request->validate(
-            ['role_slug' => 'required|string|max:32|'.$unique],
-            ['role_slug' => trans('svr-core-lang::validation')],
-        );
-
-        // role_status - Статус роли
-        $request->validate(
-            ['role_status' => 'required|string|min:3|max:32'],
-            ['role_status' => trans('svr-core-lang::validation')],
-        );
-
-        // role_status_delete - Флаг удаление роли
-        $request->validate(
-            ['role_status_delete' => 'required'],
-            ['role_status_delete' => trans('svr-core-lang::validation')],
-        );
+    /**
+     * Получить сообщения об ошибках валидации
+     * @return array
+     */
+    private function getValidationMessages(): array
+    {
+        return [
+            $this->primaryKey => trans('svr-core-lang::validation.required'),
+            'role_name_long' => trans('svr-core-lang::validation'),
+            'role_name_short' => trans('svr-core-lang::validation'),
+            'role_slug' => trans('svr-core-lang::validation'),
+            'role_status' => trans('svr-core-lang::validation'),
+            'role_status_delete' => trans('svr-core-lang::validation'),
+        ];
     }
 }

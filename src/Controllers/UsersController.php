@@ -415,6 +415,7 @@ class UsersController extends AdminController
         // Статус email пользователя
         $form->select('user_email_status', trans('svr-core-lang::svr.user.user_email_status'))
             ->options(SystemStatusConfirmEnum::get_option_list())
+            ->required()
             ->default('changed')
             ->help(__('user_email_status'));
 
@@ -432,18 +433,21 @@ class UsersController extends AdminController
         // Приоритетный способ получения уведомлений
         $form->select('user_notifications', trans('svr-core-lang::svr.user.user_notifications'))
             ->options(SystemStatusNotificationEnum::get_option_list())
+            ->required()
             ->default('email')
             ->help(__('user_notifications'));
 
         // Статус записи (активна/не активна)
         $form->select('user_status', trans('svr-core-lang::svr.user.user_status'))
             ->options(SystemStatusEnum::get_option_list())
+            ->required()
             ->default('enabled')
             ->help(__('user_status'));
 
         // Статус псевдо-удаленности записи (активна - не удалена/не активна - удалена)
         $form->select('user_status_delete', trans('svr-core-lang::svr.user.user_status_delete'))
             ->options(SystemStatusDeleteEnum::get_option_list())
+            ->required()
             ->default('active')
             ->help(__('user_status_delete'));
 

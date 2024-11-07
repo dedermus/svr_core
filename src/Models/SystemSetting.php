@@ -4,6 +4,8 @@ namespace Svr\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * Модель Setting
@@ -80,88 +82,83 @@ class SystemSetting extends Model
     /**
      * Создать запись
      *
-     * @param $request
+     * @param Request $request
      *
      * @return void
      */
-    public function settingCreate($request): void
+    public function settingCreate(Request $request): void
     {
-        $this->rules($request);
-        $this->fill($request->all());
-        $this->save();
+        $this->validateRequest($request);
+        $this->fill($request->all())->save();
     }
 
     /**
      * Обновить запись
-     * @param $request
+     *
+     * @param Request $request
      *
      * @return void
      */
-    public function settingUpdate($request): void
+    public function settingUpdate(Request $request): void
     {
-        // валидация
-        $this->rules($request);
-        // получаем массив полей и значений и з формы
+        $this->validateRequest($request);
         $data = $request->all();
-        if (!isset($data[$this->primaryKey])) return;
-        // получаем id
-        $id = $data[$this->primaryKey];
-        // готовим сущность для обновления
-        $modules_data = $this->find($id);
-        // обновляем запись
-        $modules_data->update($data);
+        $id = $data[$this->primaryKey] ?? null;
+
+        if ($id) {
+            $setting = $this->find($id);
+            if ($setting) {
+                $setting->update($data);
+            }
+        }
     }
 
     /**
-     * Валидация входных данных
-     * @param $request
-     *
-     * @return void
+     * Валидация запроса
+     * @param Request $request
      */
-    private function rules($request): void
+    private function validateRequest(Request $request)
     {
-        // получаем поля со значениями
-        $data = $request->all();
+        $rules = $this->getValidationRules($request);
+        $messages = $this->getValidationMessages();
+        $request->validateWithBag('default', $rules, $messages);
+    }
 
-        // получаем значение первичного ключа
-        $id = (isset($data[$this->primaryKey])) ? $data[$this->primaryKey] : null;
+    /**
+     * Получить правила валидации
+     * @param Request $request
+     * @return array
+     */
+    private function getValidationRules(Request $request): array
+    {
+        $id = $request->input($this->primaryKey);
 
-        // id - Первичный ключ
-        if (!is_null($id)) {
-            $request->validate(
-                [$this->primaryKey => 'required|exists:.'.$this->getTable().','.$this->primaryKey],
-                [$this->primaryKey => trans('svr-core-lang::validation.required')],
-            );
-        }
+        return [
+            $this->primaryKey => [
+                $request->isMethod('put') ? 'required' : '',
+                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+            ],
+            'owner_type' => 'required|string|max:255',
+            'owner_id' => 'required|numeric|max:99999999999',
+            'setting_code' => 'required|string|max:50',
+            'setting_value' => 'required|string',
+            'setting_value_alt' => 'nullable|string|max:255',
+        ];
+    }
 
-        // owner_type - признак принадлежности записи
-        $request->validate(
-            ['owner_type' => 'required|string|max:255'],
-            ['owner_type' => trans('svr-core-lang::validation')],
-        );
-
-        // owner_id - идентификатор принадлежности записи
-        $request->validate(
-            ['owner_id' => 'required|numeric|max:99999999999'],
-            ['owner_id' => trans('svr-core-lang::validation')],
-        );
-
-        // setting_code - код записи
-        $request->validate(
-            ['setting_code' => 'required|string|max:50'],
-            ['setting_code' => trans('svr-core-lang::validation')],
-        );
-
-        // setting_value - значение
-        $request->validate(
-            ['setting_value' => 'required|string'],
-            ['setting_value' => trans('svr-core-lang::validation')],
-        );
-
-        // setting_value_alt - альтернативное значение
-        $request->validate(
-            ['setting_value_alt' => 'nullable|string|max:255'],
-            ['setting_value_alt' => trans('svr-core-lang::validation')],
-        );
+    /**
+     * Получить сообщения об ошибках валидации
+     * @return array
+     */
+    private function getValidationMessages(): array
+    {
+        return [
+            $this->primaryKey => trans('svr-core-lang::validation.required'),
+            'owner_type' => trans('svr-core-lang::validation'),
+            'owner_id' => trans('svr-core-lang::validation'),
+            'setting_code' => trans('svr-core-lang::validation'),
+            'setting_value' => trans('svr-core-lang::validation'),
+            'setting_value_alt' => trans('svr-core-lang::validation'),
+        ];
     }
 }

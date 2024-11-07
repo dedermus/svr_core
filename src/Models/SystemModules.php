@@ -4,6 +4,10 @@ namespace Svr\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Svr\Core\Enums\SystemStatusEnum;
 
 /**
  * Модель Modules
@@ -79,36 +83,34 @@ class SystemModules extends Model
     /**
      * Создать запись
      *
-     * @param $request
+     * @param Request $request
      *
      * @return void
      */
-    public function moduleCreate($request): void
+    public function moduleCreate(Request $request): void
     {
-        $this->rules($request);
-        $this->fill($request->all());
-        $this->save();
+        $this->validateRequest($request);
+        $this->fill($request->all())->save();
     }
 
     /**
      * Обновить запись
-     * @param $request
+     * @param Request $request
      *
      * @return void
      */
-    public function moduleUpdate($request): void
+    public function moduleUpdate(Request $request): void
     {
-        // валидация
-        $this->rules($request);
-        // получаем массив полей и значений и з формы
+        $this->validateRequest($request);
         $data = $request->all();
-        if (!isset($data[$this->primaryKey])) return;
-        // получаем id
-        $id = $data[$this->primaryKey];
-        // готовим сущность для обновления
-        $modules_data = $this->find($id);
-        // обновляем запись
-        $modules_data->update($data);
+        $id = $data[$this->primaryKey] ?? null;
+
+        if ($id) {
+            $module = $this->find($id);
+            if ($module) {
+                $module->update($data);
+            }
+        }
     }
 
     /**
@@ -117,7 +119,7 @@ class SystemModules extends Model
      *
      * @return void
      */
-    private function rules($request): void
+    private function rules_old($request): void
     {
         // получаем поля со значениями
         $data = $request->all();
@@ -135,7 +137,7 @@ class SystemModules extends Model
 
         // module_name - Название модуля
         $request->validate(
-            ['module_name' => 'required|string|max:64'],
+            ['module_name' => 'required|string|min:2|max:64'],
             ['module_name' => trans('svr-core-lang::validation')],
         );
 
@@ -159,5 +161,56 @@ class SystemModules extends Model
             ['module_slug' => 'required|string|max:32|'.$unique],
             ['module_slug' => trans('svr-core-lang::validation')],
         );
+    }
+
+    /**
+     * Валидация запроса
+     * @param Request $request
+     */
+    private function validateRequest(Application|Request $request)
+    {
+        $rules = $this->getValidationRules($request);
+        $messages = $this->getValidationMessages();
+        $request->validateWithBag('default', $rules, $messages);
+    }
+
+    /**
+     * Получить правила валидации
+     * @param Request $request
+     * @return array
+     */
+    private function getValidationRules(Request $request): array
+    {
+        $id = $request->input($this->primaryKey);
+
+        $uniqueRule = is_null($id)
+            ? 'unique:.' . $this->getTable() . ',module_slug'
+            : 'unique:.' . $this->getTable() . ',module_slug,' . $id . ',' . $this->primaryKey;
+
+        return [
+            $this->primaryKey => [
+                'required',
+                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+            ],
+            'module_name' => 'required|string|min:2|max:64',
+            'module_description' => 'required|string|max:100',
+            'module_class_name' => 'required|string|max:32',
+            'module_slug' => 'required|string|max:32|' . $uniqueRule,
+        ];
+    }
+
+    /**
+     * Получить сообщения об ошибках валидации
+     * @return array
+     */
+    private function getValidationMessages(): array
+    {
+        return [
+            $this->primaryKey => trans('svr-core-lang::validation.required'),
+            'module_name' => trans('svr-core-lang::validation'),
+            'module_description' => trans('svr-core-lang::validation'),
+            'module_class_name' => trans('svr-core-lang::validation'),
+            'module_slug' => trans('svr-core-lang::validation'),
+        ];
     }
 }

@@ -28,7 +28,7 @@ return new class extends Migration
                 $table->string('user_last', 32)->nullable(true)->comment('Фамилия');
                 $table->string('user_avatar', 255)->nullable(true)->comment('Иконка (аватар)'); // null
                 $table->string('user_password', 64)->nullable(false)->comment('Пароль');
-                $table->string('user_sex', 255)->nullable(false)->default('male')->comment('Пол (гендерная принадлежность)'); // null
+                $table->addColumn('system.system_sex','user_sex', 12)->nullable(false)->default('male')->comment('Пол (гендерная принадлежность)'); // null
                 $table->string('user_email', 64)->nullable(false)->comment('Электронный адрес');
                 $table->string('user_phone', 18)->nullable(true)->comment('Телефон'); // null
                 $table->string('user_base_index', 16)->nullable(true)->default(null)->comment('Базовый индекс хозяйства при автоматическом создании пользователей');
