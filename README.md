@@ -27,7 +27,7 @@ License
 Seeders
 ------------
 
-`php artisan db:seed --class=Svr\Core\Seeders\DatabaseSeeder`
+`php artisan db:seed --class=Svr\Core\Seeders\CoreSeeder`
 
 
 Import extend for open-admin

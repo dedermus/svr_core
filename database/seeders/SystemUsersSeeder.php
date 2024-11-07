@@ -70349,6 +70349,6 @@ class SystemUsersSeeder extends Seeder
             DB::table('system.system_users')->insert($value);
         }
 
-        DB::query("ALTER SEQUENCE system.system_users_user_id_seq RESTART WITH 4000;");
+        DB::statement("SELECT setval('system.system_users_user_id_seq', (SELECT MAX(user_id) from system.system_users))");
     }
 }

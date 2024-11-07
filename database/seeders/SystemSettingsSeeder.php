@@ -155,5 +155,7 @@ class SystemSettingsSeeder extends Seeder
                 "updated_at"        => Carbon::now()->format('Y-m-d H:i:s'),
             ],
         ]);
+
+        DB::statement("SELECT setval('system.system_settings_setting_id_seq', (SELECT MAX(setting_id) from system.system_settings))");
     }
 }
