@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Svr\Core\Enums\SystemStatusEnum;
 
 /**
  * Модель Modules
@@ -111,56 +110,6 @@ class SystemModules extends Model
                 $module->update($data);
             }
         }
-    }
-
-    /**
-     * Валидация входных данных
-     * @param $request
-     *
-     * @return void
-     */
-    private function rules_old($request): void
-    {
-        // получаем поля со значениями
-        $data = $request->all();
-
-        // получаем значение первичного ключа
-        $id = (isset($data[$this->primaryKey])) ? $data[$this->primaryKey] : null;
-
-        // id - Первичный ключ
-        if (!is_null($id)) {
-            $request->validate(
-                [$this->primaryKey => 'required|exists:.'.$this->getTable().','.$this->primaryKey],
-                [$this->primaryKey => trans('svr-core-lang::validation.required')],
-            );
-        }
-
-        // module_name - Название модуля
-        $request->validate(
-            ['module_name' => 'required|string|min:2|max:64'],
-            ['module_name' => trans('svr-core-lang::validation')],
-        );
-
-        // module_description - Описание модуля
-        $request->validate(
-            ['module_description' => 'required|string|max:100'],
-            ['module_description' => trans('svr-core-lang::validation')],
-        );
-
-        // module_class_name - Имя класса модуля
-        $request->validate(
-            ['module_class_name' => 'required|string|max:32'],
-            ['module_class_name' => trans('svr-core-lang::validation')],
-        );
-
-        // module_slug - Слаг для модуля (уникальный идентификатор)
-        $unique = is_null($id)
-            ? '|unique:.'.$this->getTable().',module_slug,null,'.$this->primaryKey
-            : '|unique:.'.$this->getTable().',module_slug,'.$id.','.$this->primaryKey;
-        $request->validate(
-            ['module_slug' => 'required|string|max:32|'.$unique],
-            ['module_slug' => trans('svr-core-lang::validation')],
-        );
     }
 
     /**

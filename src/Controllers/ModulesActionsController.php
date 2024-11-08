@@ -237,10 +237,7 @@ class ModulesActionsController extends AdminController
         // Флаг записи логов
         $form->text('right_log_write', trans('svr-core-lang::svr.modules_actions.right_log_write'))
             ->required()
-            //->options(SystemStatusEnum::get_option_list())
-            ->default('disabled')
-            //->help(__('right_log_write'))
-        ;
+            ->default('disabled');
 
         $form->datetime('created_at', trans('svr-core-lang::svr.created_at'))
             ->disable()
