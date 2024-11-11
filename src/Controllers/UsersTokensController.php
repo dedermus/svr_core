@@ -115,7 +115,7 @@ class UsersTokensController extends AdminController
             ->sortable();
         $grid->column('user_id', trans('svr-core-lang::svr.users_token.user_id'))
             ->link(function ($value){
-                    return '/admin/svr_users/'.$value['user_id'];
+                    return '/admin/core/users/'.$value['user_id'];
                 }, '_blank')
             ->help(__('user_id'))
             ->sortable();
@@ -200,7 +200,7 @@ class UsersTokensController extends AdminController
 
         $show->field('token_id', trans('svr-core-lang::svr.users_token.token_id'));
         $show->field('user_id', trans('svr-core-lang::svr.users_token.user_id'))
-            ->link('/admin/svr_users/'.$data['user_id'], '_blank');
+            ->link('/admin/core/users/'.$data['user_id'], '_blank');
         $show->field('participation_id', trans('svr-core-lang::svr.users_token.participation_id'));
         $show->field('token_value', trans('svr-core-lang::svr.users_token.token_value'));
         $show->field('token_client_ip', trans('svr-core-lang::svr.users_token.token_client_ip'));
