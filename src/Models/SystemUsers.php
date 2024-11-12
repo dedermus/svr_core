@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
+use Zebra_Image;
 
 class SystemUsers extends Model
 {
@@ -101,10 +102,19 @@ class SystemUsers extends Model
     protected string $pathAvatar = 'images/avatars/';
 
     /**
+     * Постфиксы аватарки
+     * @var array|string[]
+     */
+    protected array $avatarPostfix = [
+        '_small.jpg',
+        '_big.jpg',
+    ];
+
+    /**
      * Диск хранения
      * @var string
      */
-    protected string $diskAvatar = 'public';
+    protected string $diskAvatar = 'local';
 
     /**
      * @var bool
@@ -130,6 +140,15 @@ class SystemUsers extends Model
     }
 
     /**
+     * Получить постфиксы аватара
+     * @return array|string[]
+     */
+    public function getAvatarPostfix(): array
+    {
+        return $this->avatarPostfix;
+    }
+
+    /**
      * Получить диск хранения аватарки
      * @return string
      */
@@ -141,12 +160,13 @@ class SystemUsers extends Model
     /**
      * Получить путь к аватару.
      * @param $avatar
+     * @param $size
      * @return string
      */
-    public function getUrlAvatar($avatar): string
+    public function getUrlAvatar($avatar, $size): string
     {
-        if (Storage::exists( $this->getPathAvatar() . $avatar) && !is_null($avatar)) {
-            return asset($this->getPathAvatar() . $avatar);
+        if (Storage::exists( $this->getPathAvatar() . $avatar.$size) && !is_null($avatar.$size)) {
+            return asset($this->getPathAvatar() . $avatar.$size);
         }
 
         $default = config('admin.default_avatar') ?: '/vendor/open-admin/open-admin/gfx/user.svg';
@@ -157,19 +177,67 @@ class SystemUsers extends Model
      * Перехват удаления записи
      * @return bool|null
      */
-    public function delete()
+    public function delete(): ?bool
     {
         $this->mergeAttributesFromCachedCasts();
         $data = $this->attributes;
         $id = $data[$this->primaryKey] ?? null;
         $res = $id ? SystemUsers::findOrFail($id)->toArray() : [];
-        $avatar = $res['user_avatar'] ?? null;
+        $this->eraseAvatar($res['user_avatar']);
+        return parent::delete();
+    }
 
-        if (Storage::exists(  $this->getPathAvatar() . $avatar) && !is_null($avatar)) {
-            Storage::delete( $this->getPathAvatar() . $avatar);
+    /**
+     * Изменяет размер изображения на указанную ширину и высоту.
+     *
+     * @param string $original_image_name Название исходного файла изображения.
+     * @param string $new_message_name Название измененного файла изображения.
+     * @param string $image_path Путь к файлам изображения.
+     * @param int $width Новая ширина изображения.
+     * @param int $height Новая высота изображения.
+     */
+    public function image_resize($original_image_name, $new_message_name, $image_path, $width, $height)
+    {
+        $image = new Zebra_Image();
+        //$image->source_path = Storage::disk('avatars')->path($original_image_name);
+        //$image->target_path = Storage::disk('avatars')->path($new_message_name);
+        $image->source_path = Storage::disk($this->getDiskAvatar())->path($original_image_name);
+        $image->target_path = Storage::disk($this->getDiskAvatar())->path($new_message_name);
+        if (!$image->resize($width, $height, ZEBRA_IMAGE_NOT_BOXED)) {
+            switch ($image->error) {
+                case 1:
+                    return 'Файл не существует';
+                    break;
+                case 2:
+                    return 'Файл не является изображением';
+                    break;
+                case 3:
+                    return 'Не удалось сохранить изображение';
+                    break;
+                case 4:
+                    return 'Неподдерживаемый тип исходного изображения';
+                    break;
+                case 5:
+                    return 'Неподдерживаемый тип изменяемого изображения';
+                    break;
+                case 6:
+                    return 'Библиотека GD не поддерживает тип изображения';
+                    break;
+                case 7:
+                    return 'Библиотека GD не установлена';
+                    break;
+                case 8:
+                    return 'Команда "chmod" отключена в конфигурации PHP';
+                    break;
+                case 9:
+                    return 'Функция "exif_read_data" недоступна';
+                    break;
+            }
+
+            return false;
         }
 
-        return parent::delete();
+        return true;
     }
 
     /**
@@ -189,6 +257,16 @@ class SystemUsers extends Model
             $filenamebild = $filename . "_" . time() . "." . $extention;
             $fileNameToStore = $this->getPathAvatar() . $filenamebild;
             $request->file('user_avatar')->storeAs($fileNameToStore);
+
+            $image_name_big = str_replace('.' . $extention, '_big.jpg', $filenamebild);
+            $image_name_small = str_replace('.' . $extention, '_small.jpg', $filenamebild);
+
+            $this->image_resize($filenamebild, $image_name_big, $this->getPathAvatar(), 800, 800);
+            $this->image_resize($filenamebild, $image_name_small, $this->getPathAvatar(), 200, 200);
+
+            if (Storage::exists($this->getPathAvatar() . $filenamebild) && !is_null($filenamebild)) {
+                Storage::delete($this->getPathAvatar() . $filenamebild);
+            }
         } else {
             $data = $request->all();
             $id = $data[$this->primaryKey] ?? null;
@@ -198,11 +276,12 @@ class SystemUsers extends Model
             }
         }
 
-        return $filenamebild;
+        return str_replace('.' . $extention, '', $filenamebild);
+        //return $filenamebild;
     }
 
     /**
-     * Удалить аватар с диска
+     * Подготовка удаления аватар с диска
      * @param $request
      *
      * @return bool
@@ -212,14 +291,26 @@ class SystemUsers extends Model
         $data = $request->all();
         $id = $data[$this->primaryKey] ?? null;
         $res = $id ? SystemUsers::findOrFail($id)->toArray() : [];
-        $avatar = $res['user_avatar'] ?? null;
-        // если файл аватар существует
-        if (Storage::exists( $this->getPathAvatar() .$avatar) && !is_null($avatar)) {
-            Storage::delete( $this->getPathAvatar() .$avatar);
-            return true;
-        } else {
-            return false;
+        return $this->eraseAvatar($res['user_avatar']);
+    }
+
+    /**
+     * Удаление аватара с диска
+     * @param $avatar
+     *
+     * @return bool
+     */
+    public function eraseAvatar($avatar): bool
+    {
+        if (empty(trim($avatar))) return false;
+
+        foreach ($this->getAvatarPostfix() as $postfix) {
+            $path = $this->getPathAvatar() .$avatar.$postfix;
+            if (Storage::exists( $path)) {
+                Storage::delete( $path);
+            }
         }
+        return true;
     }
 
     /**

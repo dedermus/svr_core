@@ -130,7 +130,7 @@ class UsersController extends AdminController
         $grid->column('user_avatar', trans('svr-core-lang::svr.user.user_avatar'))
             //->image(asset($systemUsers->getPathAvatar()))
             ->display(function ($item) use ($systemUsers) {
-                return '<a href="'.$systemUsers->getUrlAvatar($item).'" target="_blank"><img alt=""  src="'.$systemUsers->getUrlAvatar($item).'" height="40" ></a>';
+                return '<a href="'.$systemUsers->getUrlAvatar($item, '_small.jpg').'" target="_blank"><img alt=""  src="'.$systemUsers->getUrlAvatar($item, '_smail.jpg').'" height="40" ></a>';
             })
             ->help(__('user_avatar'))->sortable();
 
@@ -282,8 +282,8 @@ class UsersController extends AdminController
         })->label();
         $show->field('user_avatar', trans('svr-core-lang::svr.user.user_avatar'))
             ->unescape()->as(function ($user_avatar) use ($model) {
-                return '<a href="'.$model->getUrlAvatar($user_avatar).'" target="_blank">
-                <img style="min-width: 200px !important; max-width: 320px !important;" alt="" src="'.$model->getUrlAvatar($user_avatar).'"/></a>';
+                return '<a href="'.$model->getUrlAvatar($user_avatar, '_big.jpg').'" target="_blank">
+                <img style="min-width: 200px !important; max-width: 320px !important;" alt="" src="'.$model->getUrlAvatar($user_avatar, '_big.jpg').'"/></a>';
             });
         $show->field('user_sex', trans('svr-core-lang::svr.user.user_sex'));
         $show->field('user_email', trans('svr-core-lang::svr.user.user_email'));
@@ -354,7 +354,7 @@ class UsersController extends AdminController
         // Иконка (аватар)
         $form->image('user_avatar', trans('svr-core-lang::svr.user.user_avatar'))
             ->customFormat(function ($item) use ($model) {
-                return $model->getUrlAvatar($item);
+                return $model->getUrlAvatar($item, '_big.jpg');
             })
             ->help(__('user_avatar'));
 
