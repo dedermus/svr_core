@@ -199,10 +199,8 @@ class SystemUsers extends Model
     public function image_resize($original_image_name, $new_message_name, $image_path, $width, $height)
     {
         $image = new Zebra_Image();
-        //$image->source_path = Storage::disk('avatars')->path($original_image_name);
-        //$image->target_path = Storage::disk('avatars')->path($new_message_name);
-        $image->source_path = Storage::disk($this->getDiskAvatar())->path($original_image_name);
-        $image->target_path = Storage::disk($this->getDiskAvatar())->path($new_message_name);
+        $image->source_path = Storage::disk($this->getDiskAvatar())->path($this->getPathAvatar().$original_image_name);
+        $image->target_path = Storage::disk($this->getDiskAvatar())->path($this->getPathAvatar().$new_message_name);
         if (!$image->resize($width, $height, ZEBRA_IMAGE_NOT_BOXED)) {
             switch ($image->error) {
                 case 1:
@@ -416,7 +414,7 @@ class SystemUsers extends Model
             'user_email' => 'required|string|max:64',
             'user_email_status' => [
                 'required',
-               // 'string|max:64',
+                // 'string|max:64',
                 Rule::enum(SystemStatusConfirmEnum::class)
             ],
             'user_phone' => 'nullable|string|max:18',
@@ -427,17 +425,17 @@ class SystemUsers extends Model
             ],
             'user_notifications' => [
                 'required',
-               // 'string|max:64',
+                // 'string|max:64',
                 Rule::enum(SystemStatusNotificationEnum::class)
             ],
             'user_status' => [
                 'required',
-               // 'string|max:64',
+                // 'string|max:64',
                 Rule::enum(SystemStatusEnum::class)
             ],
             'user_status_delete' => [
                 'required',
-               // 'string|max:64',
+                // 'string|max:64',
                 Rule::enum(SystemStatusDeleteEnum::class)
             ],
         ];

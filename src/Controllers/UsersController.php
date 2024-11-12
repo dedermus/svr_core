@@ -130,7 +130,7 @@ class UsersController extends AdminController
         $grid->column('user_avatar', trans('svr-core-lang::svr.user.user_avatar'))
             //->image(asset($systemUsers->getPathAvatar()))
             ->display(function ($item) use ($systemUsers) {
-                return '<a href="'.$systemUsers->getUrlAvatar($item, '_small.jpg').'" target="_blank"><img alt=""  src="'.$systemUsers->getUrlAvatar($item, '_smail.jpg').'" height="40" ></a>';
+                return '<a href="'.$systemUsers->getUrlAvatar($item, '_small.jpg').'" target="_blank"><img alt=""  src="'.$systemUsers->getUrlAvatar($item, '_small.jpg').'" height="40" ></a>';
             })
             ->help(__('user_avatar'))->sortable();
 
