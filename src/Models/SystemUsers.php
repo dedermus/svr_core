@@ -104,7 +104,7 @@ class SystemUsers extends Model
      * Диск хранения
      * @var string
      */
-    protected string $diskAvatar = 'public/';
+    protected string $diskAvatar = 'public';
 
     /**
      * @var bool
@@ -145,7 +145,7 @@ class SystemUsers extends Model
      */
     public function getUrlAvatar($avatar): string
     {
-        if (Storage::exists($this->getDiskAvatar() . $this->getPathAvatar() . $avatar) && !is_null($avatar)) {
+        if (Storage::exists( $this->getPathAvatar() . $avatar) && !is_null($avatar)) {
             return asset($this->getPathAvatar() . $avatar);
         }
 
@@ -165,8 +165,8 @@ class SystemUsers extends Model
         $res = $id ? SystemUsers::findOrFail($id)->toArray() : [];
         $avatar = $res['user_avatar'] ?? null;
 
-        if (Storage::exists($this->getDiskAvatar() . $this->getPathAvatar() . $avatar) && !is_null($avatar)) {
-            Storage::delete($this->getDiskAvatar() . $this->getPathAvatar() . $avatar);
+        if (Storage::exists(  $this->getPathAvatar() . $avatar) && !is_null($avatar)) {
+            Storage::delete( $this->getPathAvatar() . $avatar);
         }
 
         return parent::delete();
@@ -188,7 +188,7 @@ class SystemUsers extends Model
             $extention = $request->file('user_avatar')->getClientOriginalExtension();
             $filenamebild = $filename . "_" . time() . "." . $extention;
             $fileNameToStore = $this->getPathAvatar() . $filenamebild;
-            $request->file('user_avatar')->storeAs($this->getDiskAvatar(), $fileNameToStore);
+            $request->file('user_avatar')->storeAs($fileNameToStore);
         } else {
             $data = $request->all();
             $id = $data[$this->primaryKey] ?? null;
@@ -214,8 +214,8 @@ class SystemUsers extends Model
         $res = $id ? SystemUsers::findOrFail($id)->toArray() : [];
         $avatar = $res['user_avatar'] ?? null;
         // если файл аватар существует
-        if (Storage::exists($this->getDiskAvatar() . $this->getPathAvatar() .$avatar) && !is_null($avatar)) {
-            Storage::delete($this->getDiskAvatar() . $this->getPathAvatar() .$avatar);
+        if (Storage::exists( $this->getPathAvatar() .$avatar) && !is_null($avatar)) {
+            Storage::delete( $this->getPathAvatar() .$avatar);
             return true;
         } else {
             return false;

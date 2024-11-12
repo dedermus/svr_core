@@ -35,9 +35,9 @@ Import extend for open-admin
 `php artisan admin:import svr-core`
 
 
-Так же в файле `config/filesystems.php` добавляем символьную ссылку на папку links:
+Так же в файле `config/filesystems.php` в разделе LINK добавляем символьную ссылку на папку links:
 ------------
-`public_path('images') => storage_path('app/public/images'),`
+`public_path('images') => storage_path('app/private/images'),`
 
 После этого с консоли вводим команду:
 ------------
