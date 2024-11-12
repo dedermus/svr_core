@@ -309,7 +309,7 @@ class SystemUsers extends Model
             'user_first' => 'nullable|string|min:1|max:32',
             'user_middle' => 'nullable|string|min:1|max:32',
             'user_last' => 'nullable|string|min:1|max:32',
-            'user_avatar' => 'image|nullable|mimes:jpeg,jpg,png,gif|max:10000',
+            'user_avatar' => 'file|nullable|mimes:jpeg,jpg,png,gif|max:100',
             'user_password' => 'required|min:1|max:64',
             'user_sex' => [
                 'required',
@@ -364,7 +364,7 @@ class SystemUsers extends Model
             'user_first' => trans('svr-core-lang::validation'),
             'user_middle' => trans('svr-core-lang::validation'),
             'user_last' => trans('svr-core-lang::validation'),
-            'user_avatar' => trans('svr-core-lang::validation'),
+            'user_avatar' => trans('svr-core-lang::validation.file'),
             'user_password' => trans('svr-core-lang::validation'),
             'user_sex' => trans('svr-core-lang::validation'),
             'user_herriot_login' => trans('svr-core-lang::validation'),
