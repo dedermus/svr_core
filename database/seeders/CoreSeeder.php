@@ -17,5 +17,6 @@ class CoreSeeder extends Seeder
         (new SystemRolesSeeder)->run();
         (new SystemSettingsSeeder)->run();
         (new SystemUsersNotificationsMessagesSeeder)->run();
+        (new SystemRolesRightSeeder)->run();
     }
 }
