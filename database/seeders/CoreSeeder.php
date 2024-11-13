@@ -3,6 +3,7 @@
 namespace Svr\Core\Seeders;
 
 use Illuminate\Database\Seeder;
+use Svr\Core\Models\SystemUsersRoles;
 
 class CoreSeeder extends Seeder
 {
@@ -18,5 +19,6 @@ class CoreSeeder extends Seeder
         (new SystemSettingsSeeder)->run();
         (new SystemUsersNotificationsMessagesSeeder)->run();
         (new SystemRolesRightSeeder)->run();
+        (new SystemUsersRolesSeeder)->run();
     }
 }
