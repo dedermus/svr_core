@@ -246,7 +246,7 @@ class SystemUsers extends Model
     public function addFileAvatar($request): ?string
     {
         $filenamebild = null;
-
+        $extention = null;
         if ($request->hasFile('user_avatar')) {
             $this->deleteAvatar($request);
             $filenameWithExt = $request->file('user_avatar')->getClientOriginalName();
