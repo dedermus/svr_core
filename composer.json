@@ -31,7 +31,8 @@
     },
     "require": {
         "php": "^8.2",
-        "dedermus/open-admin-core": "^v2.0"
+        "dedermus/open-admin-core": "^v2.0",
+        "stefangabos/zebra_image": "^2.8"
     },
     "require-dev": {
         "phpunit/phpunit": "~6.0"
