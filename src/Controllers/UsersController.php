@@ -2,6 +2,7 @@
 
 namespace Svr\Core\Controllers;
 
+use Illuminate\Support\Facades\Request;
 use Svr\Core\Models\SystemRoles;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersRoles;
@@ -506,5 +507,31 @@ class UsersController extends AdminController
         });
 
         return $form;
+    }
+
+    public function api_users_list()
+    {
+        $request = Request::instance();
+        $return_list	= [];
+        $search_string	= $request->request->get('query');
+
+        if(!empty($search_string))
+        {
+            $result = SystemUsers::where('user_last', 'ilike', '%'.$search_string.'%')->limit(10)->get(['user_id', 'user_first', 'user_middle', 'user_last']);
+
+            if($result)
+            {
+                foreach($result as $user)
+                {
+                    $return_list[]	= ['user_id' => $user['user_id'], 'user_fullname' => $user['user_last'].' '.$user['user_first'].' '.$user['user_middle']];
+                }
+
+                return $return_list;
+            }else{
+                return [];
+            }
+        }else{
+            return [];
+        }
     }
 }
