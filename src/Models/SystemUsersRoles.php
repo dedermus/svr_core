@@ -19,14 +19,12 @@ class SystemUsersRoles extends Model
      */
     protected $table = 'system.system_users_roles';
 
-
     /**
      * Первичный ключ таблицы
      *
      * @var string
      */
     protected $primaryKey = 'user_role_id';
-
 
     /**
      * Поле даты создания строки
@@ -35,14 +33,12 @@ class SystemUsersRoles extends Model
      */
     const CREATED_AT = 'created_at';
 
-
     /**
      * Поле даты обновления строки
      *
      * @var string
      */
     const UPDATED_AT = 'updated_at';
-
 
     /**
      * Поля, которые можно менять сразу массивом

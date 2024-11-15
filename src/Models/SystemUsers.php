@@ -168,9 +168,7 @@ class SystemUsers extends Model
         if (Storage::exists( $this->getPathAvatar() . $avatar.$size) && !is_null($avatar.$size)) {
             return asset($this->getPathAvatar() . $avatar.$size);
         }
-
-        $default = config('admin.default_avatar') ?: '/vendor/open-admin/open-admin/gfx/user.svg';
-        return admin_asset($default);
+        return admin_asset(config('admin.default_avatar') ?: '/vendor/open-admin/open-admin/gfx/user.svg');
     }
 
     /**
@@ -191,12 +189,12 @@ class SystemUsers extends Model
      * Изменяет размер изображения на указанную ширину и высоту.
      *
      * @param string $original_image_name Название исходного файла изображения.
-     * @param string $new_message_name Название измененного файла изображения.
-     * @param string $image_path Путь к файлам изображения.
-     * @param int $width Новая ширина изображения.
-     * @param int $height Новая высота изображения.
+     * @param string $new_message_name    Название измененного файла изображения.
+     * @param string $image_path          Путь к файлам изображения.
+     * @param int    $width               Новая ширина изображения.
+     * @param int    $height              Новая высота изображения.
      */
-    public function image_resize($original_image_name, $new_message_name, $image_path, $width, $height)
+    public function image_resize(string $original_image_name, string $new_message_name, string $image_path, int $width, int $height): bool|string
     {
         $image = new Zebra_Image();
         $image->source_path = Storage::disk($this->getDiskAvatar())->path($this->getPathAvatar().$original_image_name);
@@ -275,7 +273,6 @@ class SystemUsers extends Model
         }
 
         return str_replace('.' . $extention, '', $filenamebild);
-        //return $filenamebild;
     }
 
     /**
@@ -373,11 +370,23 @@ class SystemUsers extends Model
      * Валидация запроса
      * @param Request $request
      */
-    private function validateRequest(Request $request)
+    private function validateRequest(Request $request): void
     {
         $rules = $this->getValidationRules($request);
         $messages = $this->getValidationMessages();
-        $request->validateWithBag('default', $rules, $messages);
+        $request->validate($rules, $messages);
+    }
+
+    /**
+     * Получить правила валидации по переданному фильтру полей
+     * @param Request $request      - Запрос
+     * @param         $filterKeys   - Список необходимых полей
+     *
+     * @return array
+     */
+    public function getFilterValidationRules(Request $request, $filterKeys): array
+    {
+        return array_intersect_key($this->getValidationRules($request), array_flip($filterKeys));
     }
 
     /**
@@ -387,8 +396,6 @@ class SystemUsers extends Model
      */
     private function getValidationRules(Request $request): array
     {
-        $id = $request->input($this->primaryKey);
-
         return [
             $this->primaryKey => [
                 $request->isMethod('put') ? 'required' : '',
@@ -414,31 +421,37 @@ class SystemUsers extends Model
             'user_email' => 'required|string|max:64',
             'user_email_status' => [
                 'required',
-                // 'string|max:64',
                 Rule::enum(SystemStatusConfirmEnum::class)
             ],
             'user_phone' => 'nullable|string|max:18',
             'user_phone_status' => [
                 'required',
-                //'string|max:64',
                 Rule::enum(SystemStatusConfirmEnum::class)
             ],
             'user_notifications' => [
                 'required',
-                // 'string|max:64',
                 Rule::enum(SystemStatusNotificationEnum::class)
             ],
             'user_status' => [
                 'required',
-                // 'string|max:64',
                 Rule::enum(SystemStatusEnum::class)
             ],
             'user_status_delete' => [
                 'required',
-                // 'string|max:64',
                 Rule::enum(SystemStatusDeleteEnum::class)
             ],
         ];
+    }
+
+    /**
+     * Получить сообщения об ошибках валидации по переданному фильтру полей
+     * @param $filterKeys   - Список необходимых полей
+     *
+     * @return array
+     */
+    public function getFilterValidationMessages($filterKeys): array
+    {
+        return array_intersect_key($this->getValidationMessages(), array_flip($filterKeys));
     }
 
     /**

@@ -5,6 +5,7 @@ namespace Svr\Core\Exceptions;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Container\Container;
 use Illuminate\Foundation\Configuration\Exceptions;
+use OpenAdminCore\Admin\Admin;
 use Symfony\Component\Mailer\Exception\InvalidArgumentException;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Exceptions\InvalidSignatureException;
@@ -25,7 +26,7 @@ class ExceptionHandler
             /**
              * определение кастомного Exceptions для api
              */
-            if ($request->is('api/*')) {
+            if ($request->is(config('admin.extensions.api-tester.prefix').'/*')) {
                 if ($e instanceof AuthenticationException &&
                     '/user' === $request->json()->getPathInfo()
                 ) {

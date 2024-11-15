@@ -114,12 +114,26 @@ class SystemRoles extends Model
     /**
      * Валидация запроса
      * @param Request $request
+     *
+     * @return void
      */
-    private function validateRequest(Request $request)
+    private function validateRequest(Request $request): void
     {
         $rules = $this->getValidationRules($request);
         $messages = $this->getValidationMessages();
-        $request->validateWithBag('default', $rules, $messages);
+        $request->validate($rules, $messages);
+    }
+
+    /**
+     * Получить правила валидации по переданному фильтру полей
+     * @param Request $request      - Запрос
+     * @param         $filterKeys   - Список необходимых полей
+     *
+     * @return array
+     */
+    public function getFilterValidationRules(Request $request, $filterKeys): array
+    {
+        return array_intersect_key($this->getValidationRules($request), array_flip($filterKeys));
     }
 
     /**
@@ -156,6 +170,17 @@ class SystemRoles extends Model
                 Rule::enum(SystemStatusDeleteEnum::class)
             ],
         ];
+    }
+
+    /**
+     * Получить сообщения об ошибках валидации по переданному фильтру полей
+     * @param $filterKeys   - Список необходимых полей
+     *
+     * @return array
+     */
+    public function getFilterValidationMessages($filterKeys): array
+    {
+        return array_intersect_key($this->getValidationMessages(), array_flip($filterKeys));
     }
 
     /**

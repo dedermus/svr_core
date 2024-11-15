@@ -91,29 +91,24 @@ class SystemUsersToken extends Model
 
     /**
      * Создать запись
-     *
-     * @param $request
+     * @param Request $request
      *
      * @return void
      */
     public function settingCreate(Request $request): void
     {
-        $this->authorize();
-
         $this->validateRequest($request);
         $this->fill($request->all())->save();
     }
 
     /**
      * Обновить запись
-     * @param $request
+     * @param Request $request
      *
      * @return void
      */
     public function settingUpdate(Request $request): void
     {
-        $this->authorize();
-
         $this->validateRequest($request);
         $data = $request->all();
         $id = $data[$this->primaryKey] ?? null;
@@ -127,23 +122,28 @@ class SystemUsersToken extends Model
     }
 
     /**
-     * Определить, уполномочен ли пользователь выполнить этот запрос.
-     * @return bool
-     */
-    public function authorize(): bool
-    { echo 2;
-        return auth()->check();
-    }
-
-    /**
      * Валидация запроса
      * @param Request $request
+     *
+     * @return void
      */
-    private function validateRequest(Request $request)
+    private function validateRequest(Request $request): void
     {
         $rules = $this->getValidationRules($request);
         $messages = $this->getValidationMessages();
-        $request->validateWithBag('default', $rules, $messages);
+        $request->validate($rules, $messages);
+    }
+
+    /**
+     * Получить правила валидации по переданному фильтру полей
+     * @param Request $request      - Запрос
+     * @param         $filterKeys   - Список необходимых полей
+     *
+     * @return array
+     */
+    public function getFilterValidationRules(Request $request, $filterKeys): array
+    {
+        return array_intersect_key($this->getValidationRules($request), array_flip($filterKeys));
     }
 
     /**
@@ -177,6 +177,17 @@ class SystemUsersToken extends Model
                 Rule::enum(SystemStatusEnum::class)
             ],
         ];
+    }
+
+    /**
+     * Получить сообщения об ошибках валидации по переданному фильтру полей
+     * @param $filterKeys   - Список необходимых полей
+     *
+     * @return array
+     */
+    public function getFilterValidationMessages($filterKeys): array
+    {
+        return array_intersect_key($this->getValidationMessages(), array_flip($filterKeys));
     }
 
     /**

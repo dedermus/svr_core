@@ -4,6 +4,7 @@ namespace Svr\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SystemRolesRights extends Model
 {
@@ -52,18 +53,21 @@ class SystemRolesRights extends Model
     /**
      * Получить связь ролей и прав
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
-	public function roles()
-	{
+	public function roles(): BelongsTo
+    {
 		return $this->belongsTo(SystemRoles::class, 'role_slug', 'role_slug');
 	}
 
 	/**
 	 * Получение прав роли
-	 */
-	public static function roleRightsGet($role_id)
-	{
+     * @param $role_id
+     *
+     * @return array
+     */
+	public static function roleRightsGet($role_id): array
+    {
 		$role_data					= systemRoles::find($role_id);
 
 		if($role_data)

@@ -95,23 +95,28 @@ class SystemModulesActions extends Model
     }
 
     /**
-     * Определить, уполномочен ли пользователь выполнить этот запрос.
-     * @return bool
-     */
-    public function authorize(): bool
-    {
-        return auth()->check();
-    }
-
-    /**
      * Валидация запроса
      * @param Request $request
+     *
+     * @return void
      */
-    private function validateRequest(Application|Request $request)
+    private function validateRequest(Request $request): void
     {
         $rules = $this->getValidationRules($request);
         $messages = $this->getValidationMessages();
-        $request->validateWithBag('default', $rules, $messages);
+        $request->validate($rules, $messages);
+    }
+
+    /**
+     * Получить правила валидации по переданному фильтру полей
+     * @param Request $request      - Запрос
+     * @param         $filterKeys   - Список необходимых полей
+     *
+     * @return array
+     */
+    public function getFilterValidationRules(Request $request, $filterKeys): array
+    {
+        return array_intersect_key($this->getValidationRules($request), array_flip($filterKeys));
     }
 
     /**
@@ -144,6 +149,17 @@ class SystemModulesActions extends Model
                 Rule::enum(SystemStatusEnum::class),
             ],
         ];
+    }
+
+    /**
+     * Получить сообщения об ошибках валидации по переданному фильтру полей
+     * @param $filterKeys   - Список необходимых полей
+     *
+     * @return array
+     */
+    public function getFilterValidationMessages($filterKeys): array
+    {
+        return array_intersect_key($this->getValidationMessages(), array_flip($filterKeys));
     }
 
     /**
