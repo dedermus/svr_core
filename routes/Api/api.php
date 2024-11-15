@@ -17,10 +17,15 @@ use Svr\Core\Controllers\Api\ApiUsersController;
 |
 */
 
-Route::middleware('api')
-    ->prefix('api')
-    ->middleware(ApiValidationErrors::class)
-    ->group(function () {
+Route::prefix(config('svr.api_prefix'))->group(function () {
+
+//        dd(config('auth.guards'),
+//        config('auth.providers'));
+    Route::get('auth/info', [ApiUsersController::class, 'show_auth_info'])->middleware('auth:svr_api');
+
+    Route::post('auth/login', [ApiUsersController::class, 'authLogin']);
+    
+    
         Route::get('right/list/', [ApiModulesActionsController::class, 'index']);      // Для получения списка записей
         Route::post('right/create/', [ApiModulesActionsController::class, 'store']);      // Для создания новой записи
         Route::post('right/edit/', [ApiModulesActionsController::class, 'update']

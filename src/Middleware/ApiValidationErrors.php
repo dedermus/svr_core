@@ -12,6 +12,7 @@ class ApiValidationErrors
     public function handle(Request $request, Closure $next)
     {
         $response = $next($request);
+
         // Обработка исключения валидации (ValidationException)
         if ($response->exception instanceof ValidationException) {
             $errors = $response->exception->errors();

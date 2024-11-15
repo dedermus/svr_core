@@ -26,26 +26,12 @@ class ExceptionHandler
             /**
              * определение кастомного Exceptions для api
              */
-            if ($request->is(config('admin.extensions.api-tester.prefix').'/*')) {
-                if ($e instanceof AuthenticationException &&
-                    '/user' === $request->json()->getPathInfo()
-                ) {
-                    return $response->noContent();
-                }
-                if ($e instanceof InvalidSignatureException) {
-                    return $response->make(
-                        content: [
-                            'status' => 'error',
-                            'message' => $e->getMessage()
-                        ],
-                        status: $e->getStatusCode(),
-                    );
-                }
+            if ($request->is(config('svr.api_prefix') . '/*')) {
                 if ($e instanceof NotFoundHttpException) {
                     return $response->make(
                         content: [
-                            'status' => 'error',
-                            'message' => 'Not Found.'
+                            'status'  => 'error',
+                            'message' => $e->getMessage()
                         ],
                         status: $e->getStatusCode(),
                     );
@@ -53,7 +39,7 @@ class ExceptionHandler
                 if ($e instanceof MethodNotAllowedHttpException) {
                     return $response->make(
                         content: [
-                            'status' => 'error',
+                            'status'  => 'error',
                             'message' => $e->getMessage()
                         ],
                         status: $e->getStatusCode(),
@@ -62,25 +48,12 @@ class ExceptionHandler
                 if ($e instanceof InvalidArgumentException) {
                     return $response->make(
                         content: [
-                            'status' => 'error',
-                            'message' => 'Method Not Allowed.'
+                            'status'  => 'error',
+                            'message' => $e->getMessage()
                         ],
                         status: $e->getStatusCode(),
                     );
                 }
-//                if ($e instanceof ValidationException) {
-//                    $errors = [];
-//                    foreach ($e->errors() as $attribute => $message) {
-//                        $errors[$attribute] = $message[0];
-//                    }
-//                    return $response->make(
-//                        content: [
-//                            'status' => 'error',
-//                            'message' => 'Ошибка валидации',
-//                            'errors' => $errors],
-//                        status: $e->status,
-//                    );
-//                }
                 return false;
             }
         });

@@ -15,12 +15,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
 use Zebra_Image;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 
-class SystemUsers extends Model
+class SystemUsers extends Authenticatable
 {
     use GetEnums;
-
+    use AuthenticatableTrait;
     use HasFactory;
+    use Notifiable;
+    use HasApiTokens;
+
 
     /**
      * Точное название таблицы с учетом схемы
@@ -406,7 +414,7 @@ class SystemUsers extends Model
             'user_middle' => 'nullable|string|min:1|max:32',
             'user_last' => 'nullable|string|min:1|max:32',
             'user_avatar' => 'file|nullable|mimes:jpeg,jpg,png,gif|max:100',
-            'user_password' => 'required|min:1|max:64',
+            'user_password' => 'required|string|min:1|max:64',
             'user_sex' => [
                 'required',
                 Rule::enum(SystemSexEnum::class)
@@ -418,7 +426,7 @@ class SystemUsers extends Model
             'user_herriot_apikey' => 'nullable|string|max:255',
             'user_herriot_issuerid' => 'nullable|string|max:255',
             'user_herriot_serviceid' => 'nullable|string|max:255',
-            'user_email' => 'required|string|max:64',
+            'user_email' => 'required|email:rfc,dns|max:64',
             'user_email_status' => [
                 'required',
                 Rule::enum(SystemStatusConfirmEnum::class)

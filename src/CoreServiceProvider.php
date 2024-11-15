@@ -6,6 +6,8 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
 use Svr\Core\Middleware\ApiValidationErrors;
 use Svr\Core\Exceptions\ExceptionHandler;
+use Svr\Core\Models\SystemUsers;
+
 class CoreServiceProvider extends ServiceProvider
 {
     /**
@@ -51,7 +53,7 @@ class CoreServiceProvider extends ServiceProvider
     protected function registerMiddleware($middleware)
     {
         $kernel = $this->app[Kernel::class];
-        $kernel->appendMiddlewareToGroup('api', $middleware); // доббавить мидлвар в группу api
+        $kernel->appendMiddlewareToGroup('api', $middleware); // добавить мидлвар в группу api
     }
 
     /**
@@ -76,5 +78,39 @@ class CoreServiceProvider extends ServiceProvider
         );
 
         return $this;
+    }
+
+    /**
+     * Register any application services.
+     *
+     * @return void
+     */
+    public function register()
+    {
+        /** Добавим защитника для API роутеров */
+        config(
+            [
+                'auth.guards.svr_api' => [
+                    'driver' => 'sanctum',
+                    'provider' => 'svr_users',
+                    'hash' => false,
+                ],
+            ]);
+
+        /** Добавим провайдера для API роутеров */
+        config(
+            [
+                'auth.providers.svr_users' => [
+                    'driver' => 'eloquent',
+                    'model' => SystemUsers::class,
+                    'user_password' => 'user_password',
+                    'user_email' => 'user_email',
+                ]
+            ]);
+
+        /** Добавим в конфиг файл config/app.php ключ 'api_prefix' равный значению ключа API_PREFIX из окружения (.env)
+         * @example Получить значение: config('svr.api_prefix') config('svr.api_prefix')
+         */
+        $this->mergeConfigFrom(__DIR__ . '/../config/app.php', 'svr');
     }
 }

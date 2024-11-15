@@ -95,7 +95,7 @@ class SystemUsersToken extends Model
      *
      * @return void
      */
-    public function settingCreate(Request $request): void
+    public function userTokenCreate(Request $request): void
     {
         $this->validateRequest($request);
         $this->fill($request->all())->save();
@@ -107,7 +107,7 @@ class SystemUsersToken extends Model
      *
      * @return void
      */
-    public function settingUpdate(Request $request): void
+    public function userTokenUpdate(Request $request): void
     {
         $this->validateRequest($request);
         $data = $request->all();

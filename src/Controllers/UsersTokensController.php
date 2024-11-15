@@ -308,12 +308,12 @@ class UsersTokensController extends AdminController
             // создается текущая страница формы.
             if ($form->isCreating())
             {
-                $model->settingCreate(request());
+                $model->userTokenCreate(request());
             }
             // обновляется текущая страница формы.
             if ($form->isEditing())
             {
-                $model->settingUpdate(request());
+                $model->userTokenUpdate(request());
             }
         });
 
