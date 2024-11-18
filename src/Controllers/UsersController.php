@@ -509,6 +509,11 @@ class UsersController extends AdminController
         return $form;
     }
 
+
+	/**
+	 * Получение списка пользователей для выбора в селект
+	 * @return array
+	 */
     public function api_users_list()
     {
         $request = Request::instance();
