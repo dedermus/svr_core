@@ -156,9 +156,8 @@ class UsersNotificationsController extends AdminController
         $grid->column('notification_date_view', trans('svr-core-lang::svr.users_notifications.notification_date_view'))
             ->help(__('notification_date_view'))
             ->display(function ($value) use ($systemUsersNotifications) {
-                return Carbon::parse($value)->timezone(config('app.timezone'))->format(
-                    $systemUsersNotifications->getDateFormat()
-                );
+                return (!is_null($value)) ? Carbon::parse($value)->timezone(config('app.timezone'))->format(
+                    $systemUsersNotifications->getDateFormat()) : null;
             })->sortable();
 
         // Дата создания
@@ -192,9 +191,12 @@ class UsersNotificationsController extends AdminController
     protected function detail(mixed $id): Show
     {
         $show = new Show(SystemUsersNotifications::findOrFail($id));
+        $data = $this->systemUsersNotifications->find($id)->toArray();
         $show->field('notification_id', trans('svr-core-lang::svr.users_notifications.notification_id'));
-        $show->field('user_id', trans('svr-core-lang::svr.users_notifications.user_id'));
-        $show->field('author_id', trans('svr-core-lang::svr.users_notifications.author_id'));
+        $show->field('user_id', trans('svr-core-lang::svr.users_notifications.user_id'))
+            ->link('/admin/core/users/'.$data['user_id'], '_blank');
+        $show->field('author_id', trans('svr-core-lang::svr.users_notifications.author_id'))
+            ->link('/admin/core/users/'.$data['author_id'], '_blank');
         $show->field('notification_type', trans('svr-core-lang::svr.users_notifications.notification_type'));
         $show->field('notification_title', trans('svr-core-lang::svr.users_notifications.notification_title'));
         $show->field('notification_text', trans('svr-core-lang::svr.users_notifications.notification_text'));
@@ -228,7 +230,7 @@ class UsersNotificationsController extends AdminController
             -> help(__('notification_id'));
 
         // Идентификатор пользователя
-        $form->select('user_id', trans('svr-core-lang::svr.users_token.user_id'))
+        $form->select('user_id', trans('svr-core-lang::svr.users_notifications.user_id'))
             ->required()
             ->options(function() use ($usersPrimaryKey){
                 return SystemUsers::All([$usersPrimaryKey, $usersPrimaryKey])->pluck($usersPrimaryKey, $usersPrimaryKey);
@@ -236,9 +238,9 @@ class UsersNotificationsController extends AdminController
             ->help(__('user_id'));
 
         // Идентификатор автора
-        $form->select('author_id', trans('svr-core-lang::svr.users_token.author_id'))
+        $form->select('author_id', trans('svr-core-lang::svr.users_notifications.author_id'))
             ->options(function() use ($usersPrimaryKey){
-                return SystemUsers::All(['author_id', $usersPrimaryKey])->pluck($usersPrimaryKey, $usersPrimaryKey);
+                return SystemUsers::All([$usersPrimaryKey, $usersPrimaryKey])->pluck($usersPrimaryKey, $usersPrimaryKey);
             })
             ->help(__('author_id'));
 
@@ -262,11 +264,10 @@ class UsersNotificationsController extends AdminController
         // Дата создания уведомления
         $form->datetime('notification_date_add', trans('svr-core-lang::svr.users_notifications.notification_date_add'))
             ->help(__('notification_date_add'))
-            ->disable();
+            ->readonly();
 
         // Дата просмотра уведомления. Если NULL, то уведомление еще не просмотрено
         $form->datetime('notification_date_view', trans('svr-core-lang::svr.users_notifications.notification_date_view'))
-            ->disable()
             ->help(__('notification_date_view'));
 
         // Дата создания
@@ -285,7 +286,7 @@ class UsersNotificationsController extends AdminController
             // создается текущая страница формы.
             if ($form->isCreating())
             {
-                 $systemUsersNotifications->userNotificationsCreate(request());
+                $systemUsersNotifications->userNotificationsCreate(request());
             }
             // обновляется текущая страница формы.
             if ($form->isEditing())

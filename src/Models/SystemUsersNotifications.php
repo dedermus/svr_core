@@ -167,8 +167,8 @@ class SystemUsersNotifications extends Model
             ],
             'notification_title'     => 'required|string|max:55',
             'notification_text'      => 'required|string',
-            'notification_date_add'  => 'required|data',
-            'notification_date_view' => 'nullable|data',
+            'notification_date_add'  => 'required|date_format:"Y-m-d H:i:s"',
+            'notification_date_view' => 'nullable|date_format:"Y-m-d H:i:s"',
         ];
     }
 
