@@ -2,7 +2,6 @@
 
 namespace Svr\Core\Controllers\Api;
 
-use Illuminate\Auth\Events\Validated;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
@@ -11,9 +10,7 @@ use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersToken;
 use Svr\Core\Resources\AuthInfoSystemUsersResource;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
-
+use hisorange\BrowserDetect\Parser as Browser;
 class ApiUsersController extends Controller
 {
     /**
@@ -75,6 +72,12 @@ class ApiUsersController extends Controller
         return new AuthInfoSystemUsersResource($record);
     }
 
+    /**
+     * Авторизация пользователя
+     * @param Request $request
+     *
+     * @return JsonResponse
+     */
     public function authLogin(Request $request): JsonResponse
     {
         $model = new SystemUsers();
@@ -109,30 +112,21 @@ class ApiUsersController extends Controller
         $request->merge([
             'user_id' => $user->user_id,
             'participation_id' => null,
-            'token_value' => $user->createToken('auth_token')->plainTextToken,
+            'token_value' => $token,
             'token_client_ip' => $request->ip(),
-            'token_client_agent' => $request->header('User-Agent'),
-            'browser_name' => null,
-            'browser_version' => null,
-            'platform_name' => null,
-            'platform_version' => null,
-            'device_type' => 'desktop',
+            'token_client_agent' => Browser::userAgent(),//$request->header('User-Agent'),
+            'browser_name' => Browser::browserFamily(),
+            'browser_version' => Browser::browserVersion(),
+            'platform_name' => Browser::platformFamily(),
+            'platform_version' => Browser::platformVersion(),
+            'device_type' => strtolower(Browser::deviceType()),
             'token_last_login' => getdate()[0],
             'token_last_action' => getdate()[0],
             'token_status' => SystemStatusEnum::ENABLED->value,
         ]);
         (new SystemUsersToken)->userTokenCreate($request);
 
-        // Выдать токен пользователю
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-
-
-
-
         return response()->json(['token' => $token]);
-
-
     }
 
     /**

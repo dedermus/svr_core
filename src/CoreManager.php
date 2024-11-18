@@ -11,6 +11,7 @@ use Svr\Core\Controllers\ModulesController;
 use Svr\Core\Controllers\RolesController;
 use Svr\Core\Controllers\SettingsController;
 use Svr\Core\Controllers\UsersController;
+use Svr\Core\Controllers\UsersNotificationsController;
 use Svr\Core\Controllers\UsersNotificationsMessagesController;
 use Svr\Core\Controllers\UsersTokensController;
 
@@ -46,6 +47,8 @@ class CoreManager extends Extension
             $router->resource('core/settings', SettingsController::class);
             $router->resource('core/users_tokens', UsersTokensController::class);
             $router->resource('core/message_templates', UsersNotificationsMessagesController::class);
+            $router->resource('core/users_notifications', UsersNotificationsController::class);
+
         });
     }
 
@@ -97,6 +100,11 @@ class CoreManager extends Extension
                     'title'     => 'Метрика',
                     'icon'      => 'icon-address-card',
                     'uri'       => 'core/users_tokens',
+                ],
+                [
+                    'title'     => 'Уведомления пользователей',
+                    'icon'      => 'icon-notes-medical',
+                    'uri'       => 'core/users_notifications',
                 ],
                 [
                     'title'     => 'Шаблоны сообщений',

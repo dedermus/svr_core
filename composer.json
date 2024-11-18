@@ -32,7 +32,9 @@
     "require": {
         "php": "^8.2",
         "dedermus/open-admin-core": "^v2.0",
-        "stefangabos/zebra_image": "^2.8"
+        "stefangabos/zebra_image": "^2.8",
+        "hisorange/browser-detect": "^5.0",
+        "laravel/sanctum": "^4.0"
     },
     "require-dev": {
         "phpunit/phpunit": "~6.0"
