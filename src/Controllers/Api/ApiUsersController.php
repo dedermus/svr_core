@@ -2,6 +2,7 @@
 
 namespace Svr\Core\Controllers\Api;
 
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
@@ -12,6 +13,7 @@ use Svr\Core\Models\SystemUsersToken;
 use Svr\Core\Resources\AuthInfoSystemUsersResource;
 use Illuminate\Support\Facades\Hash;
 use hisorange\BrowserDetect\Parser as Browser;
+use Svr\Data\Models\DataUsersParticipations;
 
 class ApiUsersController extends Controller
 {
@@ -118,6 +120,24 @@ class ApiUsersController extends Controller
         // Выдать токен пользователю
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        $last_token = (array)SystemUsersToken::userTokenData($user->user_id);
+
+        $participation_id = ($last_token) ? $last_token['participation_id'] : null;
+        if (is_null($participation_id)) {
+            $dd = DataUsersParticipations::userCompaniesLocationsList($request->input('user_id'));
+            dd($dd);
+        }
+
+dd($participation_id);
+
+
+        dd($last_token);
+
+
+
+
+
+
         $request->merge([
             'user_id'            => $user->user_id,
             'participation_id'   => null,
@@ -132,13 +152,13 @@ class ApiUsersController extends Controller
             'token_last_login'   => getdate()[0],
             'token_last_action'  => getdate()[0],
             'token_status'       => SystemStatusEnum::ENABLED->value,
-            ...$user->toArray()
-        ],
-        );
+            ...$user->toArray(),
+            'created_at'         =>  \Illuminate\Support\Carbon::now()->format('Y-m-d H:i:s'),
+            'updated_at'         =>  \Illuminate\Support\Carbon::now()->format('Y-m-d H:i:s'),
+        ]);
 
         (new SystemUsersToken)->userTokenCreate($request);
         return new AuthInfoSystemUsersResource($request);
-
     }
 
     /**

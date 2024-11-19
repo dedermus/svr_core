@@ -213,4 +213,17 @@ class SystemUsersToken extends Model
             'token_status' => trans('svr-core-lang::validation'),
         ];
     }
+
+    /**
+     * Получить крайний токен
+     * @param $user_id - пользователь
+     *
+     * @return mixed
+     */
+    public static function userTokenData($user_id)
+    {
+        return SystemUsersToken::where('user_id', '=', $user_id)
+            ->whereNotNull('participation_id')
+            ->latest('updated_at')->first();
+    }
 }

@@ -133,4 +133,54 @@ class SystemUsersRoles extends Model
             ]);
         }
     }
+
+    /**
+     * Короткий список по ролям
+     * @param $userRoles - коллекция привязок ролей к пользователю
+     *
+     * @return array
+     */
+    public static function userRolesShort($userRoles)
+    {
+        $listKey = ['role_id'];
+        $result = [];
+        foreach ($userRoles as $item) {
+            $filteredItem = array_intersect_key((array)$item, array_flip($listKey));
+            $result[] = reset($filteredItem); // Извлекаем первое значение из массива
+        }
+        return $result;
+    }
+
+    /**
+     * Полный список полей по ролям
+     * @param $userRoles - коллекция привязок ролей к пользователю
+     *
+     * @return array
+     */
+    public static function userRolesLong($userRoles)
+    {
+        $listKey = [
+            'role_name_long',
+            'role_name_short',
+            'role_id',
+            'role_slug',
+            'role_status',
+            'active',
+        ];
+        $result = [];
+
+        foreach ($userRoles as $item) {
+            // Преобразуем объект в массив для фильтрации
+            $filteredItem = array_intersect_key((array)$item, array_flip($listKey));
+
+            // Используем -> для доступа к свойству объекта
+            $roleId = $item['role_id'] ?? null;
+
+            if ($roleId !== null) {
+                $result[$roleId] = $filteredItem; // Используем role_id как ключ
+            }
+        }
+
+        return $result;
+    }
 }
