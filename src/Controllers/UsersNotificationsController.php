@@ -286,7 +286,7 @@ class UsersNotificationsController extends AdminController
             // создается текущая страница формы.
             if ($form->isCreating())
             {
-                $systemUsersNotifications->userNotificationsCreate(request());
+                 $systemUsersNotifications->userNotificationsCreate(request());
             }
             // обновляется текущая страница формы.
             if ($form->isEditing())

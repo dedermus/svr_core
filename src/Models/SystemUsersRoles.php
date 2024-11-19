@@ -62,54 +62,75 @@ class SystemUsersRoles extends Model
     /**
      * Получение ролей пользователя
      *
-     * @param $user_id - аттрибут user_id из таблицы system.system_users
+     * @param int $user_id - атрибут user_id из таблицы system.system_users
      *
      * @return array
      */
     public static function userRolesGet($user_id): array
     {
-        $user_data = SystemUsers::find($user_id);
-
-        if ($user_data) {
-            $user_roles_list = self::leftJoin('system.system_roles', function ($join) {
-                $join->on('system.system_roles.role_slug', '=', 'system.system_users_roles.role_slug');
-            })->where('user_id', $user_data['user_id'])->get();
-
-            if ($user_roles_list->count() > 0) {
-                return array_column($user_roles_list->toArray(), 'role_id');
-            } else {
-                return [];
-            }
-        } else {
+        // Проверяем, существует ли пользователь
+        if (!SystemUsers::find($user_id)) {
             return [];
         }
+
+        // Получаем список ролей пользователя
+        $userRolesList = self::leftJoin('system.system_roles', 'system.system_roles.role_slug', '=', 'system.system_users_roles.role_slug')
+            ->where('user_id', $user_id)
+            ->pluck('role_id')
+            ->toArray();
+
+        return $userRolesList;
+    }
+
+    /**
+     * Получение ролей пользователя
+     *
+     * @param int $user_id - атрибут user_id из таблицы system.system_users
+     * @return array
+     */
+    public static function userRolesList($user_id): array
+    {
+        // Проверяем, существует ли пользователь
+        if (!SystemUsers::find($user_id)) {
+            return [];
+        }
+
+        // Получаем список ролей пользователя
+        $userRolesList = self::leftJoin('system.system_roles', 'system.system_roles.role_slug', '=', 'system.system_users_roles.role_slug')
+            ->where('user_id', $user_id)
+            ->get()
+            ->toArray();
+
+        return $userRolesList;
     }
 
     /**
      * Установка ролей пользователя
      *
-     * @param $user_data    - сущность пользователя
-     * @param $roles_list   - массив role_id из таблицы system.system_roles
+     * @param object $user_data - сущность пользователя
+     * @param array $roles_list - массив role_id из таблицы system.system_roles
      *
      * @return void
      */
-    public static function userRolesStore($user_data, $roles_list): void
+    public static function userRolesStore($user_data, array $roles_list): void
     {
+        // Удаляем все текущие роли пользователя
         self::where('user_id', $user_data->user_id)->delete();
 
-        if ($roles_list && is_array($roles_list) && count($roles_list) > 0) {
-            foreach ($roles_list as $role_id) {
-                if ((int)$role_id > 0) {
-                    $role_data = SystemRoles::find($role_id);
+        // Проверяем, что список ролей не пустой
+        if (empty($roles_list)) {
+            return;
+        }
 
-                    if ($role_data) {
-                        self::firstOrCreate([
-                            'user_id'   => $user_data->user_id,
-                            'role_slug' => $role_data->role_slug,
-                        ]);
-                    }
-                }
-            }
+        // Получаем данные ролей из базы данных
+        $roles = SystemRoles::whereIn('role_id', $roles_list)->get();
+
+        // Создаем новые записи для каждой роли
+        foreach ($roles as $role) {
+            self::firstOrCreate([
+                'user_id' => $user_data->user_id,
+                'role_slug' => $role->role_slug,
+            ]);
         }
     }
 }

@@ -5,12 +5,14 @@ namespace Svr\Core\Controllers\Api;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
+use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersToken;
 use Svr\Core\Resources\AuthInfoSystemUsersResource;
 use Illuminate\Support\Facades\Hash;
 use hisorange\BrowserDetect\Parser as Browser;
+
 class ApiUsersController extends Controller
 {
     /**
@@ -72,13 +74,13 @@ class ApiUsersController extends Controller
         return new AuthInfoSystemUsersResource($record);
     }
 
+
     /**
-     * Авторизация пользователя
      * @param Request $request
      *
-     * @return JsonResponse
+     * @return JsonResponse|AuthInfoSystemUsersResource
      */
-    public function authLogin(Request $request): JsonResponse
+    public function authLogin(Request $request):AuthInfoSystemUsersResource
     {
         $model = new SystemUsers();
         $user = null; // прееменная для пользователя
@@ -89,20 +91,27 @@ class ApiUsersController extends Controller
 
         $credentials = $request->only(['user_email', 'user_password']);
 
-        // Проверить существование пользователя
+        // Проверить существование пользователя, который активный и не удален
         /** @var SystemUsers $user */
-        $users = SystemUsers::where('user_email', $credentials['user_email'])->get();
+        $users = SystemUsers::where([
+                ['user_email', '=', $credentials['user_email']],
+                ['user_status', '=', SystemStatusEnum::ENABLED->value],
+                ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
+            ])->get();
 
-
+        // Если получен список пользователей с одним email
         if (!is_null($users)) {
+            // переберем пользователей
             foreach ($users as &$item) {
+                // если email и password совпали
                 if ($item && Hash::check($credentials['user_password'], $item->user_password)) {
                     $user = $item;
-                    break;
+                    break;  // выйдем из перебора
                 }
             }
+            unset($item);
         }
-
+        // Если пользователь не найден
         if (is_null($user)) {
             return response()->json(['error' => 'Неправильный логин или пароль'], 401);
         }
@@ -110,23 +119,26 @@ class ApiUsersController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         $request->merge([
-            'user_id' => $user->user_id,
-            'participation_id' => null,
-            'token_value' => $token,
-            'token_client_ip' => $request->ip(),
+            'user_id'            => $user->user_id,
+            'participation_id'   => null,
+            'token_value'        => $token,
+            'token_client_ip'    => $request->ip(),
             'token_client_agent' => Browser::userAgent(),//$request->header('User-Agent'),
-            'browser_name' => Browser::browserFamily(),
-            'browser_version' => Browser::browserVersion(),
-            'platform_name' => Browser::platformFamily(),
-            'platform_version' => Browser::platformVersion(),
-            'device_type' => strtolower(Browser::deviceType()),
-            'token_last_login' => getdate()[0],
-            'token_last_action' => getdate()[0],
-            'token_status' => SystemStatusEnum::ENABLED->value,
-        ]);
-        (new SystemUsersToken)->userTokenCreate($request);
+            'browser_name'       => Browser::browserFamily(),
+            'browser_version'    => Browser::browserVersion(),
+            'platform_name'      => Browser::platformFamily(),
+            'platform_version'   => Browser::platformVersion(),
+            'device_type'        => strtolower(Browser::deviceType()),
+            'token_last_login'   => getdate()[0],
+            'token_last_action'  => getdate()[0],
+            'token_status'       => SystemStatusEnum::ENABLED->value,
+            ...$user->toArray()
+        ],
+        );
 
-        return response()->json(['token' => $token]);
+        (new SystemUsersToken)->userTokenCreate($request);
+        return new AuthInfoSystemUsersResource($request);
+
     }
 
     /**

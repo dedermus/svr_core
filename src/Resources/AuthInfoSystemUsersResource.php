@@ -4,6 +4,8 @@ namespace Svr\Core\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Svr\Core\Models\SystemUsers;
+use Svr\Core\Models\SystemUsersNotifications;
 use Svr\Core\Models\SystemUsersToken;
 use Svr\Data\Models\DataCompanies;
 use Svr\Data\Models\DataCompaniesLocations;
@@ -13,6 +15,22 @@ use Svr\Directories\Models\DirectoryCountriesRegion;
 class AuthInfoSystemUsersResource extends JsonResource
 {
     public static $wrap = 'data';
+
+
+//    public function notifications(Request $request)
+//    {
+//        $user_id = $request->only(['user_id']);
+//        return [
+//            'count_new' => SystemUsersNotifications::where([
+//                ['user_id', '=', $user_id],
+//                ['notification_date_view', '=', null]
+//            ])->count(),
+//            'count_total' => SystemUsersNotifications::where([
+//                ['user_id', '=', $user_id],
+//            ])->count(),
+//        ];
+//    }
+
 
     /**
      * Transform the resource collection into an array.
@@ -24,6 +42,7 @@ class AuthInfoSystemUsersResource extends JsonResource
     {
         $this->additional['status'] = true;
         $this->additional['message'] = 'Успешно';
+        //$this->additional['notifications'] = $this->notifications($request);
         $this->additional['pagination'] = [
             "total_records" => 0,
             "max_page" => 1,
@@ -69,29 +88,30 @@ class AuthInfoSystemUsersResource extends JsonResource
 //            ->first();
 
         $data = [
-            'user_data' => [
-                'user_id' => $this->user_id,
-                'user_first' => $this->user_first,
-                'user_middle' => $this->user_middle,
-                'user_last' => $this->user_last,
-                'user_status' => $this->user_status,
-                'company_location_user_id' => null,
-                'company_name_short' => null,
-                'company_name_full' => null,
-                'region_name' => null,
-                // TODO дальше не сделано
-                'district_name' => null,
-                'role_name_long' => null,
-                'role_slug' => null,
-            ]
+            'user_id' => $request->get('user_id'),
+            'user_token' => $request->get('token_value'),
+            'user_first' => $request->get('user_first'),
+            'user_middle' => $request->get('user_middle'),
+            'user_last' => $request->get('user_last'),
+            'user_status' => $request->get('user_status'),
         ];
+        $this->additional['data'] = (new SystemUsers())->getCurrentUserAvatar($request->get('user_id'));
+        $this->additional['data']['user_roles_list'] = UserRolesResource::make($request);
+        $this->additional['dictionary']['user_roles_list'] = UserRolesListResource::make($request);
+
+        $this->additional['data']['user_companies_locations_list'] = UserCompaniesLocationsResource::make($request);
+
+
+
+
+        $this->additional['notifications'] = UserNotificationsResource::make($request);
         $this->additional['status'] = true;
         $this->additional['message'] = 'Успешно';
         $this->additional['pagination'] = [
-            "total_records" => 0,
+            "total_records" => 1,
             "max_page" => 1,
             "cur_page" => 1,
-            "per_page" => 100
+            "per_page" => 1
         ];
         return $data;
     }

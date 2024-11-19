@@ -114,9 +114,11 @@ class SystemUsers extends Authenticatable
      * @var array|string[]
      */
     protected array $avatarPostfix = [
-        '_small.jpg',
-        '_big.jpg',
+        '_small',
+        '_big',
     ];
+
+    protected string $avatarExp = 'jpg';
 
     /**
      * Диск хранения
@@ -145,6 +147,15 @@ class SystemUsers extends Authenticatable
     public function getPathAvatar(): string
     {
         return $this->pathAvatar;
+    }
+
+    /**
+     * Получить расширение аватара
+     * @return string
+     */
+    public function getAvatarExp(): string
+    {
+        return $this->avatarExp;
     }
 
     /**
@@ -308,7 +319,7 @@ class SystemUsers extends Authenticatable
         if (empty(trim($avatar))) return false;
 
         foreach ($this->getAvatarPostfix() as $postfix) {
-            $path = $this->getPathAvatar() .$avatar.$postfix;
+            $path = $this->getPathAvatar() .$avatar.$postfix.'.'.$this->avatarExp;
             if (Storage::exists( $path)) {
                 Storage::delete( $path);
             }
@@ -492,5 +503,30 @@ class SystemUsers extends Authenticatable
             'user_status' => trans('svr-core-lang::validation'),
             'user_status_delete' => trans('svr-core-lang::validation'),
         ];
+    }
+
+    /**
+     * Получить коллекцию аватар пользователя
+     *
+     * @param int $user_id
+     * @return array
+     */
+    public function getCurrentUserAvatar(int $user_id): array
+    {
+        $result = [];
+        $avatar = $this->find($user_id);
+
+        if ($avatar) {
+            $avatarPath = $this->getPathAvatar() . $avatar->user_avatar;
+            foreach ($this->avatarPostfix as $postfix) {
+                $result['user_avatar' . $postfix] = asset($avatarPath . $postfix . '.' . $this->avatarExp);
+            }
+        } else {
+            foreach ($this->avatarPostfix as $postfix) {
+                $result['user_avatar' . $postfix] = '';
+            }
+        }
+
+        return $result;
     }
 }
