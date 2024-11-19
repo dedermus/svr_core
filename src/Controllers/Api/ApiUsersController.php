@@ -82,7 +82,7 @@ class ApiUsersController extends Controller
      *
      * @return JsonResponse|AuthInfoSystemUsersResource
      */
-    public function authLogin(Request $request):AuthInfoSystemUsersResource
+    public function authLogin(Request $request)
     {
         $model = new SystemUsers();
         $user = null; // прееменная для пользователя
@@ -96,10 +96,10 @@ class ApiUsersController extends Controller
         // Проверить существование пользователя, который активный и не удален
         /** @var SystemUsers $user */
         $users = SystemUsers::where([
-                ['user_email', '=', $credentials['user_email']],
-                ['user_status', '=', SystemStatusEnum::ENABLED->value],
-                ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
-            ])->get();
+            ['user_email', '=', $credentials['user_email']],
+            ['user_status', '=', SystemStatusEnum::ENABLED->value],
+            ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
+        ])->get();
 
         // Если получен список пользователей с одним email
         if (!is_null($users)) {
@@ -120,27 +120,25 @@ class ApiUsersController extends Controller
         // Выдать токен пользователю
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        $last_token = (array)SystemUsersToken::userTokenData($user->user_id);
+        $last_token = SystemUsersToken::userTokenData($user->user_id);
 
-        $participation_id = ($last_token) ? $last_token['participation_id'] : null;
-        if (is_null($participation_id)) {
-            $dd = DataUsersParticipations::userCompaniesLocationsList($request->input('user_id'));
-            dd($dd);
+        $participation_id = null;
+        if ($last_token)
+        {
+            $last_token = (array)$last_token;
+            $participation_id = $last_token['participation_id'] ?? null;
+
+            if (!is_null($participation_id))
+            {
+                //TODO: по participation_id подтянуть (используя реляции или джоины) роль пользователя для того, чтобы сделать ее активной в справочниках
+                $user_roles = DataUsersParticipations::userRolesData();
+            }
         }
-
-dd($participation_id);
-
-
-        dd($last_token);
-
-
-
-
 
 
         $request->merge([
             'user_id'            => $user->user_id,
-            'participation_id'   => null,
+            'participation_id'   => $participation_id,
             'token_value'        => $token,
             'token_client_ip'    => $request->ip(),
             'token_client_agent' => Browser::userAgent(),//$request->header('User-Agent'),
