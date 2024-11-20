@@ -86,9 +86,8 @@ class SystemUsersRoles extends Model
      * Получение ролей пользователя
      *
      * @param int $user_id - атрибут user_id из таблицы system.system_users
-     * @return array
      */
-    public static function userRolesList($user_id): array
+    public static function userRolesList($user_id)
     {
         // Проверяем, существует ли пользователь
         if (!SystemUsers::find($user_id)) {
@@ -98,8 +97,7 @@ class SystemUsersRoles extends Model
         // Получаем список ролей пользователя
         $userRolesList = self::leftJoin('system.system_roles', 'system.system_roles.role_slug', '=', 'system.system_users_roles.role_slug')
             ->where('user_id', $user_id)
-            ->get()
-            ->toArray();
+            ->get();
 
         return $userRolesList;
     }

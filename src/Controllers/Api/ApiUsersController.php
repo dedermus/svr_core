@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Models\SystemUsers;
+use Svr\Core\Models\SystemUsersRoles;
 use Svr\Core\Models\SystemUsersToken;
 use Svr\Core\Resources\AuthInfoSystemUsersResource;
 use Illuminate\Support\Facades\Hash;
@@ -96,10 +97,10 @@ class ApiUsersController extends Controller
         // Проверить существование пользователя, который активный и не удален
         /** @var SystemUsers $user */
         $users = SystemUsers::where([
-            ['user_email', '=', $credentials['user_email']],
-            ['user_status', '=', SystemStatusEnum::ENABLED->value],
-            ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
-        ])->get();
+                ['user_email', '=', $credentials['user_email']],
+                ['user_status', '=', SystemStatusEnum::ENABLED->value],
+                ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
+            ])->get();
 
         // Если получен список пользователей с одним email
         if (!is_null($users)) {
@@ -120,25 +121,45 @@ class ApiUsersController extends Controller
         // Выдать токен пользователю
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        $last_token = SystemUsersToken::userTokenData($user->user_id);
+        $last_token = SystemUsersToken::userLastTokenData($user->user_id);
 
         $participation_id = null;
         if ($last_token)
         {
-            $last_token = (array)$last_token;
+            $last_token = $last_token->toArray();
             $participation_id = $last_token['participation_id'] ?? null;
-
-            if (!is_null($participation_id))
-            {
-                //TODO: по participation_id подтянуть (используя реляции или джоины) роль пользователя для того, чтобы сделать ее активной в справочниках
-                $user_roles = DataUsersParticipations::userRolesData();
-            }
+        } else {
+            //TODO: получить какую-нибудь привязку
         }
 
+        dd((new SystemUsersToken)->userTokenStore([
+            'user_id' => $user['user_id'],
+            'participation_id' => $participation_id,
+            'token_value' => $token,
+            'token_client_ip' => $request->ip()
+        ]));
 
-        $request->merge([
+        (new SystemUsersToken())->userTokenCreate($data);
+
+        $user_participation_info = DataUsersParticipations::userParticipationInfo($participation_id);
+
+        // коллекция привязок ролей к пользователю
+        $user_roles_list = SystemUsersRoles::userRolesList($user['user_id']);
+
+        // коллекция привязок компаний к пользователю
+        $user_companies_locations_list = DataUsersParticipations::userCompaniesLocationsList($user['user_id']);
+
+        // коллекция привязок регионов к пользователю
+        $user_regions_list = DataUsersParticipations::userRegionsList($user['user_id']);
+
+        // коллекция привязок районов к пользователю
+        $user_districts_list = DataUsersParticipations::userDistrictsList($user['user_id']);
+
+
+        /*$request->merge([
             'user_id'            => $user->user_id,
             'participation_id'   => $participation_id,
+            'role_id'            => $user_role_id,
             'token_value'        => $token,
             'token_client_ip'    => $request->ip(),
             'token_client_agent' => Browser::userAgent(),//$request->header('User-Agent'),
@@ -153,9 +174,8 @@ class ApiUsersController extends Controller
             ...$user->toArray(),
             'created_at'         =>  \Illuminate\Support\Carbon::now()->format('Y-m-d H:i:s'),
             'updated_at'         =>  \Illuminate\Support\Carbon::now()->format('Y-m-d H:i:s'),
-        ]);
+        ]);*/
 
-        (new SystemUsersToken)->userTokenCreate($request);
         return new AuthInfoSystemUsersResource($request);
     }
 

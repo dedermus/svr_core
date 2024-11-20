@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemStatusEnum;
+use hisorange\BrowserDetect\Parser as Browser;
 
 /**
  * Модель UsersToken
@@ -95,10 +96,38 @@ class SystemUsersToken extends Model
      *
      * @return void
      */
-    public function userTokenCreate(Request $request): void
+    public function userTokenCreate($data): void
     {
-        $this->validateRequest($request);
-        $this->fill($request->all())->save();
+        $model = new SystemUsersToken();
+        $filterKeys = $this->fillable;
+        $rules = $model->getFilterValidationRules($request, $filterKeys);
+        $messages = $model->getFilterValidationMessages($filterKeys);
+        Validator::make(
+            is_array($data) ? $data : $data->toArray(),
+            $rules,
+            $messages
+        )->validate();
+        $this->fill(is_array($data) ? $data : $data->all())->save();
+    }
+
+    public function userTokenStore($data)
+    {
+        $user_token_date = SystemUsersToken::create([
+            'user_id'            => $data['user_id'],
+            'participation_id'   => $data['participation_id'],
+            'token_value'        => $data['token_value'],
+            'token_client_ip'    => $data['token_client_ip'],
+            'token_client_agent' => Browser::userAgent(),
+            'browser_name'       => Browser::browserFamily(),
+            'browser_version'    => Browser::browserVersion(),
+            'platform_name'      => Browser::platformFamily(),
+            'platform_version'   => Browser::platformVersion(),
+            'device_type'        => strtolower(Browser::deviceType()),
+            'token_last_login'   => getdate()[0],
+            'token_last_action'  => getdate()[0],
+            'token_status'       => SystemStatusEnum::ENABLED->value
+        ]);
+        return $user_token_date;
     }
 
     /**
@@ -220,7 +249,7 @@ class SystemUsersToken extends Model
      *
      * @return mixed
      */
-    public static function userTokenData($user_id)
+    public static function userLastTokenData($user_id)
     {
         return SystemUsersToken::where('user_id', '=', $user_id)
             ->whereNotNull('participation_id')
