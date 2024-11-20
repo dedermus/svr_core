@@ -5,6 +5,7 @@ namespace Svr\Core\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemStatusEnum;
 use hisorange\BrowserDetect\Parser as Browser;
@@ -100,7 +101,7 @@ class SystemUsersToken extends Model
     {
         $model = new SystemUsersToken();
         $filterKeys = $this->fillable;
-        $rules = $model->getFilterValidationRules($request, $filterKeys);
+        $rules = $model->getFilterValidationRules($data, $filterKeys);
         $messages = $model->getFilterValidationMessages($filterKeys);
         Validator::make(
             is_array($data) ? $data : $data->toArray(),

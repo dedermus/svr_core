@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
+use stdClass;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Models\SystemUsers;
@@ -14,6 +15,7 @@ use Svr\Core\Models\SystemUsersToken;
 use Svr\Core\Resources\AuthInfoSystemUsersResource;
 use Illuminate\Support\Facades\Hash;
 use hisorange\BrowserDetect\Parser as Browser;
+use Svr\Core\Resources\UserNotificationsResource;
 use Svr\Data\Models\DataUsersParticipations;
 
 class ApiUsersController extends Controller
@@ -132,28 +134,98 @@ class ApiUsersController extends Controller
             //TODO: получить какую-нибудь привязку
         }
 
-        dd((new SystemUsersToken)->userTokenStore([
+        $new_user_token_data = ((new SystemUsersToken)->userTokenStore([
             'user_id' => $user['user_id'],
             'participation_id' => $participation_id,
             'token_value' => $token,
             'token_client_ip' => $request->ip()
         ]));
 
-        (new SystemUsersToken())->userTokenCreate($data);
+        //(new SystemUsersToken())->userTokenCreate($data);
 
         $user_participation_info = DataUsersParticipations::userParticipationInfo($participation_id);
 
+        $final_data = [];
+
         // коллекция привязок ролей к пользователю
-        $user_roles_list = SystemUsersRoles::userRolesList($user['user_id']);
+        $user_roles_list = SystemUsersRoles::userRolesList($user['user_id'])->all();
+
+        foreach ($user_roles_list as $user_role)
+        {
+            $user_role = (array)$user_role;
+
+            $user_role['active'] = $user_role['role_id'] == $user_participation_info['role_id'];
+
+            $final_data['dictionary']['user_roles_list'][$user_role['role_id']] = $user_role;
+            $final_data['data']['user_roles_list'][] = $user_role['role_id'];
+        }
 
         // коллекция привязок компаний к пользователю
-        $user_companies_locations_list = DataUsersParticipations::userCompaniesLocationsList($user['user_id']);
+        $user_companies_locations_list = DataUsersParticipations::userCompaniesLocationsList($user['user_id'])->all();
+
+        foreach ($user_companies_locations_list as $user_company_location)
+        {
+            $user_company_location = (array)$user_company_location;
+
+            $user_company_location['active'] = $user_company_location['company_location_id'] == $user_participation_info['company_location_id'];
+
+            $final_data['dictionary']['user_companies_locations_list'][$user_company_location['company_location_id']] = $user_company_location;
+            $final_data['data']['user_companies_locations_list'][] = $user_company_location['company_location_id'];
+        }
 
         // коллекция привязок регионов к пользователю
-        $user_regions_list = DataUsersParticipations::userRegionsList($user['user_id']);
+        $user_regions_list = DataUsersParticipations::userRegionsList($user['user_id'])->all();
+
+        foreach ($user_regions_list as $user_region)
+        {
+            $user_region = (array)$user_region;
+
+            $user_region['active'] = $user_region['region_id'] == $user_participation_info['region_id'];
+
+            $final_data['dictionary']['user_regions_list'][$user_region['region_id']] = $user_region;
+            $final_data['data']['user_regions_list'][] = $user_region['region_id'];
+        }
 
         // коллекция привязок районов к пользователю
-        $user_districts_list = DataUsersParticipations::userDistrictsList($user['user_id']);
+        $user_districts_list = DataUsersParticipations::userDistrictsList($user['user_id'])->all();
+
+        foreach ($user_districts_list as $user_district)
+        {
+            $user_district = (array)$user_district;
+
+            $user_district['active'] = $user_district['district_id'] == $user_participation_info['district_id'];
+
+            $final_data['dictionary']['user_districts_list'][$user_district['district_id']] = $user_district;
+            $final_data['data']['user_districts_list'][] = $user_district['district_id'];
+        }
+
+        $avatars = (new SystemUsers())->getCurrentUserAvatar($user['user_id']);
+
+        $final_data['data']['user_id'] = $user['user_id'];
+        $final_data['data']['user_token'] = $token;
+        $final_data['data']['user_first'] = $user['user_first'];
+        $final_data['data']['user_middle'] = $user['user_middle'];
+        $final_data['data']['user_last'] = $user['user_last'];
+        $final_data['data']['user_avatar_small'] = $avatars['user_avatar_small'];
+        $final_data['data']['user_avatar_big'] = $avatars['user_avatar_big'];
+
+        $final_data['status'] = true;
+        $final_data['message'] = '';
+        $final_data['pagination'] = [
+            "total_records" => 0,
+            "max_page" => 1,
+            "cur_page" => 1,
+            "per_page" => 100
+        ];
+
+        $final_data['notifications'] = [
+            "count_new" => 249,
+            "count_total" => 29289
+        ];
+
+        dd($final_data);
+
+
 
 
         /*$request->merge([
