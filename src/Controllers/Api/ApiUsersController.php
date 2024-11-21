@@ -2,20 +2,18 @@
 
 namespace Svr\Core\Controllers\Api;
 
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
-use stdClass;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Hash;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Models\SystemUsers;
+use Svr\Core\Models\SystemUsersNotifications;
 use Svr\Core\Models\SystemUsersRoles;
 use Svr\Core\Models\SystemUsersToken;
 use Svr\Core\Resources\AuthInfoSystemUsersResource;
-use Illuminate\Support\Facades\Hash;
-use hisorange\BrowserDetect\Parser as Browser;
-use Svr\Core\Resources\UserNotificationsResource;
 use Svr\Data\Models\DataUsersParticipations;
 
 class ApiUsersController extends Controller
@@ -99,10 +97,10 @@ class ApiUsersController extends Controller
         // Проверить существование пользователя, который активный и не удален
         /** @var SystemUsers $user */
         $users = SystemUsers::where([
-                ['user_email', '=', $credentials['user_email']],
-                ['user_status', '=', SystemStatusEnum::ENABLED->value],
-                ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
-            ])->get();
+            ['user_email', '=', $credentials['user_email']],
+            ['user_status', '=', SystemStatusEnum::ENABLED->value],
+            ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
+        ])->get();
 
         // Если получен список пользователей с одним email
         if (!is_null($users)) {
@@ -126,8 +124,7 @@ class ApiUsersController extends Controller
         $last_token = SystemUsersToken::userLastTokenData($user->user_id);
 
         $participation_id = null;
-        if ($last_token)
-        {
+        if ($last_token) {
             $last_token = $last_token->toArray();
             $participation_id = $last_token['participation_id'] ?? null;
         } else {
@@ -150,8 +147,7 @@ class ApiUsersController extends Controller
         // коллекция привязок ролей к пользователю
         $user_roles_list = SystemUsersRoles::userRolesList($user['user_id'])->all();
 
-        foreach ($user_roles_list as $user_role)
-        {
+        foreach ($user_roles_list as $user_role) {
             $user_role = (array)$user_role;
 
             $user_role['active'] = $user_role['role_id'] == $user_participation_info['role_id'];
@@ -163,8 +159,7 @@ class ApiUsersController extends Controller
         // коллекция привязок компаний к пользователю
         $user_companies_locations_list = DataUsersParticipations::userCompaniesLocationsList($user['user_id'])->all();
 
-        foreach ($user_companies_locations_list as $user_company_location)
-        {
+        foreach ($user_companies_locations_list as $user_company_location) {
             $user_company_location = (array)$user_company_location;
 
             $user_company_location['active'] = $user_company_location['company_location_id'] == $user_participation_info['company_location_id'];
@@ -176,8 +171,7 @@ class ApiUsersController extends Controller
         // коллекция привязок регионов к пользователю
         $user_regions_list = DataUsersParticipations::userRegionsList($user['user_id'])->all();
 
-        foreach ($user_regions_list as $user_region)
-        {
+        foreach ($user_regions_list as $user_region) {
             $user_region = (array)$user_region;
 
             $user_region['active'] = $user_region['region_id'] == $user_participation_info['region_id'];
@@ -189,8 +183,7 @@ class ApiUsersController extends Controller
         // коллекция привязок районов к пользователю
         $user_districts_list = DataUsersParticipations::userDistrictsList($user['user_id'])->all();
 
-        foreach ($user_districts_list as $user_district)
-        {
+        foreach ($user_districts_list as $user_district) {
             $user_district = (array)$user_district;
 
             $user_district['active'] = $user_district['district_id'] == $user_participation_info['district_id'];
@@ -223,9 +216,47 @@ class ApiUsersController extends Controller
             "count_total" => 29289
         ];
 
-        dd($final_data);
+
+        //Складываем все данные в объект Collection
+        /** @var Collection $data - результирующий объект для вывода через ресурс */
+        $data = collect(
+            [
+                'user_token' => $token,
+                'status' => true,
+                'message' => '',
+                'pagination' => [
+                    "total_records" => 0,
+                    "max_page" => 1,
+                    "cur_page" => 1,
+                    "per_page" => 100
+                ],
+                'user' => $user,
+                "user_participation_info" => $user_participation_info,
+                "user_roles_list" => $user_roles_list,
+                "user_companies_locations_list" => $user_companies_locations_list,
+                "user_regions_list" => $user_regions_list,
+                "user_districts_list" => $user_districts_list,
+                "avatars" => $avatars,
+                "notifications" => [
+                    "count_new" => SystemUsersNotifications::where([
+                        ['user_id', '=', $user['user_id']],
+                        ['notification_date_view', '=', null]
+                    ])->count(),
+                    "count_total" => SystemUsersNotifications::where([
+                        ['user_id', '=', $user['user_id']],
+                    ])->count(),
+                ]
+            ]
+        );
 
 
+//        return $final_data;
+//        dd($final_data);
+        return new AuthInfoSystemUsersResource($data);
+
+
+//        dd(new AuthInfoSystemUsersResource($data));
+//        dd($final_data, $data);
 
 
         /*$request->merge([
@@ -248,7 +279,7 @@ class ApiUsersController extends Controller
             'updated_at'         =>  \Illuminate\Support\Carbon::now()->format('Y-m-d H:i:s'),
         ]);*/
 
-        return new AuthInfoSystemUsersResource($request);
+        return new AuthInfoSystemUsersResource($data);
     }
 
     /**
@@ -261,9 +292,9 @@ class ApiUsersController extends Controller
     private function validationErrorResponse($validator): JsonResponse
     {
         return response()->json([
-            'status'  => false,
+            'status' => false,
             'message' => 'Validation error',
-            'errors'  => $validator->errors()
+            'errors' => $validator->errors()
         ], 401);
     }
 }
