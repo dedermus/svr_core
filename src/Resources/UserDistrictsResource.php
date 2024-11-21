@@ -12,7 +12,7 @@ use Svr\Data\Models\DataCompaniesLocations;
 use Svr\Data\Models\DataUsersParticipations;
 use Svr\Directories\Models\DirectoryCountriesRegion;
 
-class UserCompaniesLocationsResource extends JsonResource
+class UserDistrictsResource extends JsonResource
 {
     public static $wrap = 'data';
 
@@ -56,26 +56,16 @@ class UserCompaniesLocationsResource extends JsonResource
     public function simple(): array
     {
         return [
-            'company_location_id' => $this->participation_item_id,
-			'company_id' => $this->company_id,
-			'company_name_short' => $this->company_name_short,
-			'company_name_full' => $this->company_name_full,
-			'country_name' => $this->country_name,
-			'country_id' => $this->country_id,
-			'region_name' => $this->region_name,
-			'region_id' => $this->region_id,
-			'district_name' => $this->district_name,
-			'district_id' => $this->district_id,
-			'active' => $this->active ?? null,
-
-
+            'district_id'			=> $this->district_id,
+			'district_name'			=> $this->district_name,
+			'active'				=> $this->active ?? null,
         ];
     }
 
     public function full(): array
     {
         return [
-            'company_location_id' => $this->participation_item_id,
+            'district_id' => $this->district_id,
         ];
     }
 }
