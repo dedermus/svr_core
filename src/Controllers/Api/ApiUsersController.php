@@ -72,9 +72,9 @@ class ApiUsersController extends Controller
         /** @var  $user - получим авторизированного пользователя */
         $user = auth()->user();
         //dd($_SERVER);
-        dd($user);
+//        dd($user->getPrimaryKey());
         $record = SystemUsers::where('user_id', $user->user_id)->first();
-        return new AuthInfoSystemUsersResource($record);
+        return response()->json( $record);
     }
 
 
@@ -138,44 +138,26 @@ class ApiUsersController extends Controller
             'token_client_ip' => $request->ip()
         ]);
 
-        //(new SystemUsersToken())->userTokenCreate($data);
-
         $user_participation_info = $this->getUserParticipationInfo($participation_id);
 
-        $user_roles_list = $this->getUserRoles($user['user_id'], $user_participation_info);
-
-
-        $final_data = [];
-
-        // коллекция привязок компаний к пользователю
-        $user_companies_locations_list = $this->getUserCompaniesLocationsList($user['user_id'], $user_participation_info);
-
-
-        // коллекция привязок регионов к пользователю
-        $user_regions_list = $this->getUserRegionsList($user['user_id'], $user_participation_info);
-
-
-        // коллекция привязок районов к пользователю
-        $user_districts_list = $this->getUserDistrictsList($user['user_id'], $user_participation_info);
-
-        $avatars = (new SystemUsers())->getCurrentUserAvatar($user['user_id']);
-
         //Складываем все данные в объект Collection
-        /** @var Collection $data - результирующий объект для вывода через ресурс */
         $data = collect(
             [
                 'user' => $user,
-                "avatars" => $avatars,
+                "avatars" => (new SystemUsers())->getCurrentUserAvatar($user['user_id']),
                 "user_participation_info" => $user_participation_info,
-                "user_companies_locations_list" => $user_companies_locations_list,
-                "user_roles_list" => $user_roles_list,
-                "user_districts_list" => $user_districts_list,
-                "user_regions_list" => $user_regions_list,
+                // коллекция привязок компаний к пользователю
+                "user_companies_locations_list" => $this->getUserCompaniesLocationsList($user['user_id'], $user_participation_info),
+                "user_roles_list" => $this->getUserRoles($user['user_id'], $user_participation_info),
+                // коллекция привязок районов к пользователю
+                "user_districts_list" => $this->getUserDistrictsList($user['user_id'], $user_participation_info),
+                // коллекция привязок регионов к пользователю
+                "user_regions_list" => $this->getUserRegionsList($user['user_id'], $user_participation_info),
                 'user_token' => $token,
                 'status' => true,
                 'message' => '',
                 'pagination' => [
-                    "total_records" => 0,
+                    "total_records" => 1,
                     "max_page" => 1,
                     "cur_page" => 1,
                     "per_page" => 100
@@ -261,6 +243,5 @@ class ApiUsersController extends Controller
             $user_district->active = $user_district->district_id == $user_participation_info->get('district_id');
         }
         return collect($user_districts_list);
-
     }
 }

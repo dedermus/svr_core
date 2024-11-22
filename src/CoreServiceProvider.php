@@ -5,6 +5,7 @@ namespace Svr\Core;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
 use Svr\Core\Middleware\ApiValidationErrors;
+use Svr\Core\Middleware\CheckUserPermissions;
 use Svr\Core\Exceptions\ExceptionHandler;
 use Svr\Core\Models\SystemUsers;
 
@@ -37,7 +38,8 @@ class CoreServiceProvider extends ServiceProvider
         }
 
         // Регистрируем глобально миддлвар
-        $this->registerMiddleware(ApiValidationErrors::class);
+        $this->registerMiddleware(ApiValidationErrors::class, 'api');
+        $this->registerMiddleware(CheckUserPermissions::class, 'api');
 
         // Регистрируем глобального  обработчик исключений
          $this->withExceptions(new ExceptionHandler());
@@ -50,10 +52,10 @@ class CoreServiceProvider extends ServiceProvider
      *
      * @param string $middleware
      */
-    protected function registerMiddleware($middleware)
+    protected function registerMiddleware($middleware, $group_name = 'api')
     {
         $kernel = $this->app[Kernel::class];
-        $kernel->appendMiddlewareToGroup('api', $middleware); // добавить мидлвар в группу api
+        $kernel->appendMiddlewareToGroup($group_name, $middleware); // добавить мидлвар в группу
     }
 
     /**
