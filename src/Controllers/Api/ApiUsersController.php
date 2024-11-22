@@ -9,12 +9,17 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
+use Svr\Core\Models\SystemRoles;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersNotifications;
 use Svr\Core\Models\SystemUsersRoles;
 use Svr\Core\Models\SystemUsersToken;
 use Svr\Core\Resources\AuthInfoSystemUsersResource;
+use Svr\Core\Resources\SvrApiResponseResource;
+use Svr\Data\Models\DataCompaniesLocations;
 use Svr\Data\Models\DataUsersParticipations;
+use Svr\Directories\Models\DirectoryCountriesRegion;
+use Svr\Directories\Models\DirectoryCountriesRegionsDistrict;
 
 class ApiUsersController extends Controller
 {
@@ -65,23 +70,55 @@ class ApiUsersController extends Controller
     /**
      * Получение информации о пользователе.
      *
-     * @return AuthInfoSystemUsersResource
+     * @return SvrApiResponseResource|JsonResponse
      */
-    public function show_auth_info()
+    public function authInfo(Request $request): SvrApiResponseResource|JsonResponse
     {
         /** @var  $user - получим авторизированного пользователя */
         $user = auth()->user();
-        //dd($_SERVER);
-        dd($user);
-        $record = SystemUsers::where('user_id', $user->user_id)->first();
-        return new AuthInfoSystemUsersResource($record);
-    }
+        //Получим токен текущего пользователья
+        $token = $request->bearerToken();
+        //Получим данные о токене из базы
+        $token_data = SystemUsersToken::where('token_value', '=', $token)->first()->toArray();
+        //Если токен не нашелся - уходим
+        if (!$token_data || !isset($token_data['participation_id']))
+        { //TODO переписать на нормальный структурированный вид после того как сделаем нормальный конструктор вывода
+            return response()->json([
+                'message' => 'Unauthenticated'
+            ], 403);
+        }
+        //запомнили participation_id
+        $participation_id = $token_data['participation_id'];
+        //получили привязки пользователя
+        $user_participation_info = DataUsersParticipations::userParticipationInfo($participation_id);
+        //собрали данные для передачи в ресурс
+        $data = collect([
+            'user' => $user,
+            'user_id' => $user['user_id'],
+            'user_participation_info' => $user_participation_info,
+            'company_data' => DataCompaniesLocations::find($user_participation_info['company_location_id'])->company,
+            'region_data' => DirectoryCountriesRegion::find($user_participation_info['region_id']),
+            'district_data' => DirectoryCountriesRegionsDistrict::find($user_participation_info['district_id']),
+            'role_data' => SystemRoles::find($user_participation_info['role_id']),
+            'participation_id' => $participation_id,
+            'status' => true,
+            'message' => '',
+            'response_resource_data' => 'Svr\Core\Resources\SvrApiAuthInfoResource',
+            'response_resource_dictionary' => false,
+            'pagination' => [
+                'total_records' => 1,
+                'cur_page' => 1,
+                'per_page' => 1
+            ],
+        ]);
 
+        return new SvrApiResponseResource($data);
+    }
 
     /**
      * @param Request $request
      *
-     * @return JsonResponse|AuthInfoSystemUsersResource
+     * @return SvrApiResponseResource
      */
     public function authLogin(Request $request)
     {
@@ -92,7 +129,7 @@ class ApiUsersController extends Controller
         $messages = $model->getFilterValidationMessages($filterKeys);
         $request->validate($rules, $messages);
 
-        $credentials = $request->only(['user_email', 'user_password']);
+        $credentials = $request->only($filterKeys);
 
         // Проверить существование пользователя, который активный и не удален
         /** @var SystemUsers $user */
@@ -115,14 +152,14 @@ class ApiUsersController extends Controller
             unset($item);
         }
         // Если пользователь не найден
-        if (is_null($user)) {
+        if (is_null($user)) { //TODO переписать на нормальный структурированный вид после того как сделаем нормальный конструктор вывода
             return response()->json(['error' => 'Неправильный логин или пароль'], 401);
         }
         // Выдать токен пользователю
         $token = $user->createToken('auth_token')->plainTextToken;
-
+        // Последний токен пользователя
         $last_token = SystemUsersToken::userLastTokenData($user->user_id);
-
+        // Пытаемся получить participation_id
         $participation_id = null;
         if ($last_token) {
             $last_token = $last_token->toArray();
@@ -130,156 +167,36 @@ class ApiUsersController extends Controller
         } else {
             //TODO: получить какую-нибудь привязку
         }
-
+        //Создали запись в таблице токенов
         $new_user_token_data = ((new SystemUsersToken)->userTokenStore([
             'user_id' => $user['user_id'],
             'participation_id' => $participation_id,
             'token_value' => $token,
             'token_client_ip' => $request->ip()
         ]));
+        //Подготовили данные для передачи в ресурс
+        $data = collect([
+            'user_token' => $token,
+            'user' => $user,
+            'user_participation_info' => DataUsersParticipations::userParticipationInfo($participation_id),
+            'user_roles_list' => SystemUsersRoles::userRolesList($user['user_id'])->all(),
+            'user_companies_locations_list' => DataUsersParticipations::userCompaniesLocationsList($user['user_id'])->all(),
+            'user_regions_list' => DataUsersParticipations::userRegionsList($user['user_id'])->all(),
+            'user_districts_list' => DataUsersParticipations::userDistrictsList($user['user_id'])->all(),
+            'avatars' => (new SystemUsers())->getCurrentUserAvatar($user['user_id']),
+            'user_id' => $user['user_id'],
+            'status' => true,
+            'message' => '',
+            'response_resource_data' => 'Svr\Core\Resources\AuthInfoSystemUsersDataResource',
+            'response_resource_dictionary' => 'Svr\Core\Resources\AuthInfoSystemUsersDictionaryResource',
+            'pagination' => [
+                'total_records' => 1,
+                'cur_page' => 1,
+                'per_page' => 1
+            ],
+        ]);
 
-        //(new SystemUsersToken())->userTokenCreate($data);
-
-        $user_participation_info = DataUsersParticipations::userParticipationInfo($participation_id);
-
-        $final_data = [];
-
-        // коллекция привязок ролей к пользователю
-        $user_roles_list = SystemUsersRoles::userRolesList($user['user_id'])->all();
-
-        foreach ($user_roles_list as $user_role) {
-            $user_role = (array)$user_role;
-
-            $user_role['active'] = $user_role['role_id'] == $user_participation_info['role_id'];
-
-            $final_data['dictionary']['user_roles_list'][$user_role['role_id']] = $user_role;
-            $final_data['data']['user_roles_list'][] = $user_role['role_id'];
-        }
-
-        // коллекция привязок компаний к пользователю
-        $user_companies_locations_list = DataUsersParticipations::userCompaniesLocationsList($user['user_id'])->all();
-
-        foreach ($user_companies_locations_list as $user_company_location) {
-            $user_company_location = (array)$user_company_location;
-
-            $user_company_location['active'] = $user_company_location['company_location_id'] == $user_participation_info['company_location_id'];
-
-            $final_data['dictionary']['user_companies_locations_list'][$user_company_location['company_location_id']] = $user_company_location;
-            $final_data['data']['user_companies_locations_list'][] = $user_company_location['company_location_id'];
-        }
-
-        // коллекция привязок регионов к пользователю
-        $user_regions_list = DataUsersParticipations::userRegionsList($user['user_id'])->all();
-
-        foreach ($user_regions_list as $user_region) {
-            $user_region = (array)$user_region;
-
-            $user_region['active'] = $user_region['region_id'] == $user_participation_info['region_id'];
-
-            $final_data['dictionary']['user_regions_list'][$user_region['region_id']] = $user_region;
-            $final_data['data']['user_regions_list'][] = $user_region['region_id'];
-        }
-
-        // коллекция привязок районов к пользователю
-        $user_districts_list = DataUsersParticipations::userDistrictsList($user['user_id'])->all();
-
-        foreach ($user_districts_list as $user_district) {
-            $user_district = (array)$user_district;
-
-            $user_district['active'] = $user_district['district_id'] == $user_participation_info['district_id'];
-
-            $final_data['dictionary']['user_districts_list'][$user_district['district_id']] = $user_district;
-            $final_data['data']['user_districts_list'][] = $user_district['district_id'];
-        }
-
-        $avatars = (new SystemUsers())->getCurrentUserAvatar($user['user_id']);
-
-        $final_data['data']['user_id'] = $user['user_id'];
-        $final_data['data']['user_token'] = $token;
-        $final_data['data']['user_first'] = $user['user_first'];
-        $final_data['data']['user_middle'] = $user['user_middle'];
-        $final_data['data']['user_last'] = $user['user_last'];
-        $final_data['data']['user_avatar_small'] = $avatars['user_avatar_small'];
-        $final_data['data']['user_avatar_big'] = $avatars['user_avatar_big'];
-
-        $final_data['status'] = true;
-        $final_data['message'] = '';
-        $final_data['pagination'] = [
-            "total_records" => 0,
-            "max_page" => 1,
-            "cur_page" => 1,
-            "per_page" => 100
-        ];
-
-        $final_data['notifications'] = [
-            "count_new" => 249,
-            "count_total" => 29289
-        ];
-
-
-        //Складываем все данные в объект Collection
-        /** @var Collection $data - результирующий объект для вывода через ресурс */
-        $data = collect(
-            [
-                'user_token' => $token,
-                'status' => true,
-                'message' => '',
-                'pagination' => [
-                    "total_records" => 0,
-                    "max_page" => 1,
-                    "cur_page" => 1,
-                    "per_page" => 100
-                ],
-                'user' => $user,
-                "user_participation_info" => $user_participation_info,
-                "user_roles_list" => $user_roles_list,
-                "user_companies_locations_list" => $user_companies_locations_list,
-                "user_regions_list" => $user_regions_list,
-                "user_districts_list" => $user_districts_list,
-                "avatars" => $avatars,
-                "notifications" => [
-                    "count_new" => SystemUsersNotifications::where([
-                        ['user_id', '=', $user['user_id']],
-                        ['notification_date_view', '=', null]
-                    ])->count(),
-                    "count_total" => SystemUsersNotifications::where([
-                        ['user_id', '=', $user['user_id']],
-                    ])->count(),
-                ]
-            ]
-        );
-
-
-//        return $final_data;
-//        dd($final_data);
-        return new AuthInfoSystemUsersResource($data);
-
-
-//        dd(new AuthInfoSystemUsersResource($data));
-//        dd($final_data, $data);
-
-
-        /*$request->merge([
-            'user_id'            => $user->user_id,
-            'participation_id'   => $participation_id,
-            'role_id'            => $user_role_id,
-            'token_value'        => $token,
-            'token_client_ip'    => $request->ip(),
-            'token_client_agent' => Browser::userAgent(),//$request->header('User-Agent'),
-            'browser_name'       => Browser::browserFamily(),
-            'browser_version'    => Browser::browserVersion(),
-            'platform_name'      => Browser::platformFamily(),
-            'platform_version'   => Browser::platformVersion(),
-            'device_type'        => strtolower(Browser::deviceType()),
-            'token_last_login'   => getdate()[0],
-            'token_last_action'  => getdate()[0],
-            'token_status'       => SystemStatusEnum::ENABLED->value,
-            ...$user->toArray(),
-            'created_at'         =>  \Illuminate\Support\Carbon::now()->format('Y-m-d H:i:s'),
-            'updated_at'         =>  \Illuminate\Support\Carbon::now()->format('Y-m-d H:i:s'),
-        ]);*/
-
-        return new AuthInfoSystemUsersResource($data);
+        return new SvrApiResponseResource($data);
     }
 
     /**
