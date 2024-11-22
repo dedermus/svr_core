@@ -111,9 +111,14 @@ class SystemUsersToken extends Model
         $this->fill(is_array($data) ? $data : $data->all())->save();
     }
 
-    public function userTokenStore($data)
+    /**
+     * Добавить в БД запись токена
+     * @param $data
+     * @return mixed
+     */
+    public function userTokenStore($data): mixed
     {
-        $user_token_date = SystemUsersToken::create([
+        return SystemUsersToken::create([
             'user_id'            => $data['user_id'],
             'participation_id'   => $data['participation_id'],
             'token_value'        => $data['token_value'],
@@ -128,7 +133,6 @@ class SystemUsersToken extends Model
             'token_last_action'  => getdate()[0],
             'token_status'       => SystemStatusEnum::ENABLED->value
         ]);
-        return $user_token_date;
     }
 
     /**
