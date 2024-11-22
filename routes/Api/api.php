@@ -19,9 +19,7 @@ use Svr\Core\Controllers\Api\ApiUsersController;
 
 Route::prefix(config('svr.api_prefix'))->group(function () {
 
-//        dd(config('auth.guards'),
-//        config('auth.providers'));
-    Route::get('auth/info', [ApiUsersController::class, 'authInfo'])->middleware('auth:svr_api');
+    Route::get('auth/info', [ApiUsersController::class, 'authInfo'])->middleware(['auth:svr_api', 'api']);
 
     Route::post('auth/login', [ApiUsersController::class, 'authLogin']);
 
