@@ -45,6 +45,17 @@ class ExceptionHandler
                         status: $e->getStatusCode(),
                     );
                 }
+                // Кастомный вывод ошибок приложения при невалидном токене
+                if ($e instanceof AuthenticationException) {
+                    return $response->make(
+                        content: [
+                            'status'  => 'error',
+                            'message' => $e->getMessage(),
+                            'message2' => "Токен не валиден. Приплыли",
+                        ],
+                        status: 401,
+                    );
+                }
                 if ($e instanceof InvalidArgumentException) {
                     return $response->make(
                         content: [

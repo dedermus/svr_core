@@ -4,11 +4,11 @@ namespace Svr\Core\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\JsonResponse;
 
 class CheckUserPermissions
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next): JsonResponse
     {
         // Получаем текущего аутентифицированного пользователя. Попробовать auth()->user()
         // Вернёт модель SystemUsers

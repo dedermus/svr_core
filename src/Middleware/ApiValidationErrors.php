@@ -9,7 +9,7 @@ use Illuminate\Validation\ValidationException;
 
 class ApiValidationErrors
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): JsonResponse
     {
         $response = $next($request);
 
