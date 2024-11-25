@@ -80,13 +80,6 @@ class ApiUsersController extends Controller
         $token = $request->bearerToken();
         //Получим данные о токене из базы
         $token_data = SystemUsersToken::where('token_value', '=', $token)->first()->toArray();
-        //Если токен не нашелся - уходим
-        if (!$token_data || !isset($token_data['participation_id']))
-        { //TODO переписать на нормальный структурированный вид после того как сделаем нормальный конструктор вывода
-            return response()->json([
-                'message' => 'Unauthenticated'
-            ], 403);
-        }
         //запомнили participation_id
         $participation_id = $token_data['participation_id'];
         //получили привязки пользователя
@@ -157,6 +150,7 @@ class ApiUsersController extends Controller
         }
         // Выдать токен пользователю
         $token = $user->createToken('auth_token')->plainTextToken;
+
         // Последний токен пользователя
         $last_token = SystemUsersToken::userLastTokenData($user->user_id);
         // Пытаемся получить participation_id
