@@ -8,12 +8,14 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemNotificationsTypesEnum;
 use Svr\Core\Enums\SystemStatusEnum;
+use Svr\Core\Traits\GetTableName;
 
 /**
  * Модель Setting
  */
 class SystemUsersNotificationsMessages extends Model
 {
+    use GetTableName;
     use HasFactory;
 
     /**
@@ -132,8 +134,8 @@ class SystemUsersNotificationsMessages extends Model
 
     /**
      * Получить правила валидации по переданному фильтру полей
-     * @param Request $request      - Запрос
-     * @param         $filterKeys   - Список необходимых полей
+     * @param Request $request    - Запрос
+     * @param         $filterKeys - Список необходимых полей
      *
      * @return array
      */
@@ -152,7 +154,7 @@ class SystemUsersNotificationsMessages extends Model
         return [
             $this->primaryKey => [
                 $request->isMethod('put') ? 'required' : '',
-                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+                Rule::exists('.' . $this->getTable(), $this->primaryKey),
             ],
             'notification_type' => [
                 'required',
@@ -180,7 +182,7 @@ class SystemUsersNotificationsMessages extends Model
 
     /**
      * Получить сообщения об ошибках валидации по переданному фильтру полей
-     * @param $filterKeys   - Список необходимых полей
+     * @param $filterKeys - Список необходимых полей
      *
      * @return array
      */

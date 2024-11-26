@@ -4,15 +4,16 @@ namespace Svr\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Svr\Core\Traits\GetTableName;
 
 /**
  * Модель Modules
  */
 class SystemModules extends Model
 {
+    use GetTableName;
     use HasFactory;
 
     /**
@@ -127,8 +128,8 @@ class SystemModules extends Model
 
     /**
      * Получить правила валидации по переданному фильтру полей
-     * @param Request $request      - Запрос
-     * @param         $filterKeys   - Список необходимых полей
+     * @param Request $request    - Запрос
+     * @param         $filterKeys - Список необходимых полей
      *
      * @return array
      */
@@ -153,7 +154,7 @@ class SystemModules extends Model
         return [
             $this->primaryKey => [
                 $request->isMethod('put') ? 'required' : '',
-                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+                Rule::exists('.' . $this->getTable(), $this->primaryKey),
             ],
             'module_name' => 'required|string|min:2|max:64',
             'module_description' => 'required|string|max:100',
@@ -164,7 +165,7 @@ class SystemModules extends Model
 
     /**
      * Получить сообщения об ошибках валидации по переданному фильтру полей
-     * @param $filterKeys   - Список необходимых полей
+     * @param $filterKeys - Список необходимых полей
      *
      * @return array
      */

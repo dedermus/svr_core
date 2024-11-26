@@ -7,12 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemNotificationsTypesEnum;
+use Svr\Core\Traits\GetTableName;
 
 /**
  * Модель Setting
  */
 class SystemUsersNotifications extends Model
 {
+    use GetTableName;
     use HasFactory;
 
     /**
@@ -200,7 +202,7 @@ class SystemUsersNotifications extends Model
             "count_old" => $this::where([
                     ['user_id', '=', $user_id],
                 ])->count() ?? 0
-            ];
+        ];
     }
 
     /**

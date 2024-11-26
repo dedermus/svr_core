@@ -2,21 +2,22 @@
 
 namespace Svr\Core\Models;
 
-use Svr\Core\Enums\SystemStatusDeleteEnum;
-use Svr\Core\Enums\SystemStatusEnum;
-use Illuminate\Validation\Rule;
-use Svr\Core\Traits\GetEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Svr\Core\Enums\SystemStatusDeleteEnum;
+use Svr\Core\Enums\SystemStatusEnum;
+use Svr\Core\Traits\GetEnums;
+use Svr\Core\Traits\GetTableName;
 
 /**
  * Модель Roles
  */
 class SystemRoles extends Model
 {
-    use GetEnums, HasFactory;
+    use GetEnums, HasFactory, GetTableName;
 
     /**
      * Точное название таблицы с учетом схемы
@@ -126,8 +127,8 @@ class SystemRoles extends Model
 
     /**
      * Получить правила валидации по переданному фильтру полей
-     * @param Request $request      - Запрос
-     * @param         $filterKeys   - Список необходимых полей
+     * @param Request $request    - Запрос
+     * @param         $filterKeys - Список необходимых полей
      *
      * @return array
      */
@@ -148,7 +149,7 @@ class SystemRoles extends Model
         return [
             $this->primaryKey => [
                 $request->isMethod('put') ? 'required' : '',
-                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+                Rule::exists('.' . $this->getTable(), $this->primaryKey),
             ],
             'role_name_long' => 'required|string|min:3|max:64',
             'role_name_short' => 'required|string|min:3|max:32',
@@ -156,7 +157,7 @@ class SystemRoles extends Model
                 'required',
                 'string',
                 'max:32',
-                Rule::unique('.'.$this->getTable())->ignore($id, $this->primaryKey)
+                Rule::unique('.' . $this->getTable())->ignore($id, $this->primaryKey)
             ],
             'role_status' => [
                 'required',
@@ -174,7 +175,7 @@ class SystemRoles extends Model
 
     /**
      * Получить сообщения об ошибках валидации по переданному фильтру полей
-     * @param $filterKeys   - Список необходимых полей
+     * @param $filterKeys - Список необходимых полей
      *
      * @return array
      */

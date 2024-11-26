@@ -2,15 +2,16 @@
 
 namespace Svr\Core\Models;
 
-use Illuminate\Support\Facades\DB;
-use Svr\Core\Traits\GetEnums;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Svr\Core\Traits\GetEnums;
+use Svr\Core\Traits\GetTableName;
 
 class SystemUsersRoles extends Model
 {
+    use GetTableName;
     use GetEnums;
-
     use HasFactory;
 
     /**
@@ -100,7 +101,7 @@ class SystemUsersRoles extends Model
             ->where('user_id', $user_id)
             ->get();*/
         $userRolesList = DB::table('system.system_users_roles')
-                            ->leftJoin('system.system_roles', 'system.system_roles.role_slug', '=', 'system.system_users_roles.role_slug')
+            ->leftJoin('system.system_roles', 'system.system_roles.role_slug', '=', 'system.system_users_roles.role_slug')
             ->where('user_id', $user_id)
             ->get();
 
@@ -110,8 +111,8 @@ class SystemUsersRoles extends Model
     /**
      * Установка ролей пользователя
      *
-     * @param object $user_data - сущность пользователя
-     * @param array $roles_list - массив role_id из таблицы system.system_roles
+     * @param object $user_data  - сущность пользователя
+     * @param array  $roles_list - массив role_id из таблицы system.system_roles
      *
      * @return void
      */
