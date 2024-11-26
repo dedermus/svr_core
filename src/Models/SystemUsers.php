@@ -10,6 +10,7 @@ use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Enums\SystemStatusNotificationEnum;
 use Svr\Core\Traits\GetEnums;
+use Svr\Core\Traits\GetTableName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -24,6 +25,7 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 class SystemUsers extends Authenticatable
 {
     use GetEnums;
+    use GetTableName;
     use AuthenticatableTrait;
     use HasFactory;
     use Notifiable;

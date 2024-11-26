@@ -7,12 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemNotificationsTypesEnum;
+use Svr\Core\Traits\GetTableName;
 
 /**
  * Модель Setting
  */
 class SystemUsersNotifications extends Model
 {
+    use GetTableName;
     use HasFactory;
 
     /**
@@ -153,21 +155,21 @@ class SystemUsersNotifications extends Model
     {
         $systemUser = new SystemUsers();
         return [
-            $this->primaryKey        => [
+            $this->primaryKey => [
                 $request->isMethod('put') ? 'required' : '',
                 Rule::exists('.' . $this->getTable(), $this->primaryKey),
             ],
-            'user_id'                => 'required|exists:.' . $systemUser->getTable() . ','
+            'user_id' => 'required|exists:.' . $systemUser->getTable() . ','
                 . $systemUser->getPrimaryKey(),
-            'author_id'              => 'nullable|exists:.' . $systemUser->getTable() . ','
+            'author_id' => 'nullable|exists:.' . $systemUser->getTable() . ','
                 . $systemUser->getPrimaryKey(),
-            'notification_type'      => [
+            'notification_type' => [
                 'required',
                 Rule::enum(SystemNotificationsTypesEnum::class)
             ],
-            'notification_title'     => 'required|string|max:55',
-            'notification_text'      => 'required|string',
-            'notification_date_add'  => 'required|date_format:"Y-m-d H:i:s"',
+            'notification_title' => 'required|string|max:55',
+            'notification_text' => 'required|string',
+            'notification_date_add' => 'required|date_format:"Y-m-d H:i:s"',
             'notification_date_view' => 'nullable|date_format:"Y-m-d H:i:s"',
         ];
     }
@@ -185,6 +187,25 @@ class SystemUsersNotifications extends Model
     }
 
     /**
+     * Получить количество уведомлений
+     *
+     * @param int $user_id
+     *
+     * @return array
+     */
+    public function getNotificationsCountByUserId(int $user_id): array
+    {
+        return ["count_new" => $this::where([
+                ['user_id', '=', $user_id],
+                ['notification_date_view', '=', null]
+            ])->count() ?? 0,
+            "count_old" => $this::where([
+                    ['user_id', '=', $user_id],
+                ])->count() ?? 0
+        ];
+    }
+
+    /**
      * Получить сообщения об ошибках валидации
      *
      * @return array
@@ -192,13 +213,13 @@ class SystemUsersNotifications extends Model
     private function getValidationMessages(): array
     {
         return [
-            $this->primaryKey        => trans('svr-core-lang::validation.required'),
-            'user_id'                => trans('svr-core-lang::validation'),
-            'author_id'              => trans('svr-core-lang::validation'),
-            'notification_type'      => trans('svr-core-lang::validation'),
-            'notification_title'     => trans('svr-core-lang::validation'),
-            'notification_text'      => trans('svr-core-lang::validation'),
-            'notification_date_add'  => trans('svr-core-lang::validation'),
+            $this->primaryKey => trans('svr-core-lang::validation.required'),
+            'user_id' => trans('svr-core-lang::validation'),
+            'author_id' => trans('svr-core-lang::validation'),
+            'notification_type' => trans('svr-core-lang::validation'),
+            'notification_title' => trans('svr-core-lang::validation'),
+            'notification_text' => trans('svr-core-lang::validation'),
+            'notification_date_add' => trans('svr-core-lang::validation'),
             'notification_date_view' => trans('svr-core-lang::validation'),
         ];
     }

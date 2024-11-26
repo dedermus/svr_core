@@ -1,18 +1,20 @@
 <?php
+
 namespace Svr\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemStatusEnum;
+use Svr\Core\Traits\GetTableName;
 
 /**
  * Модель ModulesActions
  */
 class SystemModulesActions extends Model
 {
+    use GetTableName;
     use HasFactory;
 
     /**
@@ -109,8 +111,8 @@ class SystemModulesActions extends Model
 
     /**
      * Получить правила валидации по переданному фильтру полей
-     * @param Request $request      - Запрос
-     * @param         $filterKeys   - Список необходимых полей
+     * @param Request $request    - Запрос
+     * @param         $filterKeys - Список необходимых полей
      *
      * @return array
      */
@@ -131,7 +133,7 @@ class SystemModulesActions extends Model
         return [
             $this->primaryKey => [
                 $request->isMethod('put') ? 'required' : '',
-                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+                Rule::exists('.' . $this->getTable(), $this->primaryKey),
             ],
             'module_slug' => 'required|string|min:3|max:64',
             'right_action' => 'required|string|min:3|max:32',
@@ -141,7 +143,7 @@ class SystemModulesActions extends Model
                 'string',
                 'min:3',
                 'max:65',
-                Rule::unique('.'.$this->getTable(), 'right_slug')->ignore($id, $this->primaryKey),
+                Rule::unique('.' . $this->getTable(), 'right_slug')->ignore($id, $this->primaryKey),
             ],
             'right_content_type' => 'required|string|min:3|max:32',
             'right_log_write' => [
@@ -153,7 +155,7 @@ class SystemModulesActions extends Model
 
     /**
      * Получить сообщения об ошибках валидации по переданному фильтру полей
-     * @param $filterKeys   - Список необходимых полей
+     * @param $filterKeys - Список необходимых полей
      *
      * @return array
      */

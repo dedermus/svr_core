@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Svr\Core\Traits\GetTableName;
 
 /**
  * Модель Setting
  */
 class SystemSetting extends Model
 {
+    use GetTableName;
     use HasFactory;
 
     /**
@@ -128,8 +130,8 @@ class SystemSetting extends Model
 
     /**
      * Получить правила валидации по переданному фильтру полей
-     * @param Request $request      - Запрос
-     * @param         $filterKeys   - Список необходимых полей
+     * @param Request $request    - Запрос
+     * @param         $filterKeys - Список необходимых полей
      *
      * @return array
      */
@@ -150,7 +152,7 @@ class SystemSetting extends Model
         return [
             $this->primaryKey => [
                 $request->isMethod('put') ? 'required' : '',
-                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+                Rule::exists('.' . $this->getTable(), $this->primaryKey),
             ],
             'owner_type' => 'required|string|max:255',
             'owner_id' => 'required|numeric|max:99999999999',
@@ -162,7 +164,7 @@ class SystemSetting extends Model
 
     /**
      * Получить сообщения об ошибках валидации по переданному фильтру полей
-     * @param $filterKeys   - Список необходимых полей
+     * @param $filterKeys - Список необходимых полей
      *
      * @return array
      */

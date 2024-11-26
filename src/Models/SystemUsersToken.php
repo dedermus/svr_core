@@ -2,19 +2,21 @@
 
 namespace Svr\Core\Models;
 
+use hisorange\BrowserDetect\Parser as Browser;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemStatusEnum;
-use hisorange\BrowserDetect\Parser as Browser;
+use Svr\Core\Traits\GetTableName;
 
 /**
  * Модель UsersToken
  */
 class SystemUsersToken extends Model
 {
+    use GetTableName;
     use HasFactory;
 
     /**
@@ -52,20 +54,20 @@ class SystemUsersToken extends Model
      */
     protected $fillable
         = [
-            'token_id',		                // Инкремент
-            'user_id',		                // ID пользователя
-            'participation_id',	            // Идентификатор типа привязки
-            'token_value',		            // Значение токена
-            'token_client_ip',	            // IP адрес пользователя
-            'token_client_agent',	        // Агент пользователя
-            'browser_name',		            // Имя браузера
-            'browser_version',	            // Версия браузера
-            'platform_name',		        // Имя платформы
-            'platform_version',	            // Версия платформы
-            'device_type',		            // Тип устройства
-            'token_last_login',	            // Таймстамп последнего входа
-            'token_last_action',	        // Таймстамп последнего действия
-            'token_status',		            // Статус токена
+            'token_id',                        // Инкремент
+            'user_id',                        // ID пользователя
+            'participation_id',                // Идентификатор типа привязки
+            'token_value',                    // Значение токена
+            'token_client_ip',                // IP адрес пользователя
+            'token_client_agent',            // Агент пользователя
+            'browser_name',                    // Имя браузера
+            'browser_version',                // Версия браузера
+            'platform_name',                // Имя платформы
+            'platform_version',                // Версия платформы
+            'device_type',                    // Тип устройства
+            'token_last_login',                // Таймстамп последнего входа
+            'token_last_action',            // Таймстамп последнего действия
+            'token_status',                    // Статус токена
             'created_at',                   // Дата создания записи
             'updated_at',                   // Дата редактирования записи'
         ];
@@ -119,19 +121,19 @@ class SystemUsersToken extends Model
     public function userTokenStore($data): mixed
     {
         return SystemUsersToken::create([
-            'user_id'            => $data['user_id'],
-            'participation_id'   => $data['participation_id'],
-            'token_value'        => $data['token_value'],
-            'token_client_ip'    => $data['token_client_ip'],
+            'user_id' => $data['user_id'],
+            'participation_id' => $data['participation_id'],
+            'token_value' => $data['token_value'],
+            'token_client_ip' => $data['token_client_ip'],
             'token_client_agent' => Browser::userAgent(),
-            'browser_name'       => Browser::browserFamily(),
-            'browser_version'    => Browser::browserVersion(),
-            'platform_name'      => Browser::platformFamily(),
-            'platform_version'   => Browser::platformVersion(),
-            'device_type'        => strtolower(Browser::deviceType()),
-            'token_last_login'   => getdate()[0],
-            'token_last_action'  => getdate()[0],
-            'token_status'       => SystemStatusEnum::ENABLED->value
+            'browser_name' => Browser::browserFamily(),
+            'browser_version' => Browser::browserVersion(),
+            'platform_name' => Browser::platformFamily(),
+            'platform_version' => Browser::platformVersion(),
+            'device_type' => strtolower(Browser::deviceType()),
+            'token_last_login' => getdate()[0],
+            'token_last_action' => getdate()[0],
+            'token_status' => SystemStatusEnum::ENABLED->value
         ]);
     }
 
@@ -170,8 +172,8 @@ class SystemUsersToken extends Model
 
     /**
      * Получить правила валидации по переданному фильтру полей
-     * @param Request $request      - Запрос
-     * @param         $filterKeys   - Список необходимых полей
+     * @param Request $request    - Запрос
+     * @param         $filterKeys - Список необходимых полей
      *
      * @return array
      */
@@ -192,7 +194,7 @@ class SystemUsersToken extends Model
         return [
             $this->primaryKey => [
                 $request->isMethod('put') ? 'required' : '',
-                Rule::exists('.'.$this->getTable(), $this->primaryKey),
+                Rule::exists('.' . $this->getTable(), $this->primaryKey),
             ],
             'user_id' => 'required|exists:.' . $systemUser->getTable() . ',' . $systemUser->getPrimaryKey(),
             'participation_id' => 'nullable|min_digits:1|max_digits:10',
@@ -215,7 +217,7 @@ class SystemUsersToken extends Model
 
     /**
      * Получить сообщения об ошибках валидации по переданному фильтру полей
-     * @param $filterKeys   - Список необходимых полей
+     * @param $filterKeys - Список необходимых полей
      *
      * @return array
      */
