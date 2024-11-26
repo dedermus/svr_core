@@ -2,10 +2,12 @@
 
 namespace Svr\Core\Controllers\Api;
 
+use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Hash;
+use OpenAdminCore\Admin\Middleware\Session;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Models\SystemRoles;
@@ -22,6 +24,7 @@ use Svr\Directories\Models\DirectoryCountriesRegionsDistrict;
 
 class ApiUsersController extends Controller
 {
+
     /**
      * Получение информации о пользователе.
      *
@@ -172,14 +175,19 @@ class ApiUsersController extends Controller
      */
     public function authLogout(Request $request): JsonResponse
     {
+        // получим пользователя
         $user = auth()->user();
 
+        // обновим статус токена
         SystemUsersToken::where([
             ['user_id', '=', $user['user_id']],
             ['token_value', '=', $user['token']]
         ])->update(['token_status' => SystemStatusEnum::DISABLED->value]);
 
-        return response()->json(['message' => 'Вышли'], 201);
+        // обновим статус токена Sanctum
+        auth()->user()->tokens()->delete();
+
+        return response()->json(['message' => 'user logged out'], 200);
     }
 
 

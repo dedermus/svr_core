@@ -15,6 +15,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckUserPermissions
 {
+    /**
+     * Проверка прав пользователя
+     * @param Request $request
+     * @param Closure $next
+     *
+     * @return Response
+     */
     public function handle(Request $request, Closure $next): Response
     {
         // получим токен текущего пользователя
@@ -46,7 +53,7 @@ class CheckUserPermissions
         $request_module = array_pop($current_route);
 
         if (!$this->checkPermission($request_module, $request_action, $user_participation_info['role_id'])) {
-            return response()->json(['error' => 'Forbiddden'], 403);
+            return response()->json(['error' => 'Forbidden'], 403);
         }
 
         // Если всё прошло успешно, передаем запрос дальше
@@ -62,13 +69,13 @@ class CheckUserPermissions
     /**
      * Проверяет, имеет ли пользователь необходимое разрешение для доступа к определённому модулю и действию.
      *
-     * @param string $request_module Слаг запрошенного модуля.
-     * @param string $request_action Действие, запрошенное в модуле.
-     * @param int    $role_id        ID роли пользователя.
+     * @param $request_module   - Слаг запрошенного модуля.
+     * @param $request_action   - Действие, запрошенное в модуле.
+     * @param $role_id          - ID роли пользователя.
      *
-     * @return bool True, если пользователь имеет необходимое разрешение, false в противном случае.
+     * @return bool             - True, если пользователь имеет необходимое разрешение, false в противном случае.
      */
-    public function checkPermission($request_module, $request_action, $role_id)
+    public function checkPermission($request_module, $request_action, $role_id): bool
     {
         $role_rights_list = SystemRolesRights::where('role_slug', '=', SystemRoles::find($role_id)->only('role_slug'))
             ->get()->pluck('right_slug')->toArray();
