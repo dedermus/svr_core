@@ -4,6 +4,8 @@ namespace Svr\Core\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Models\SystemModulesActions;
 use Svr\Core\Models\SystemRoles;
 use Svr\Core\Models\SystemRolesRights;
@@ -15,17 +17,25 @@ class CheckUserPermissions
 {
     public function handle(Request $request, Closure $next): Response
     {
-        //Получим токен текущего пользователья
+        // получим токен текущего пользователя
         $token = $request->bearerToken();
-        //Получим данные о токене из базы
-        $token_data = SystemUsersToken::where('token_value', '=', $token)->first()->toArray();
-        //Если токен не нашелся - уходим
-        if (!$token_data || !isset($token_data['participation_id']))
-        {
+        // получим данные о токене из базы
+        $token_data = SystemUsersToken::where([
+            ['token_value', '=', $token],
+            ['token_status', '=', SystemStatusEnum::ENABLED->value],
+        ])->whereNotNull('participation_id')
+            ->first();
+
+        // если токен не найден или DISABLED
+        if (is_null($token_data)) {
             return response()->json([
                 'message' => 'Unauthenticated'
             ], 401);
+        } else {
+            // иначе преобразуем результат в массив
+            $token_data->toArray();
         }
+
         //запомнили participation_id
         $participation_id = $token_data['participation_id'];
         //получили привязки пользователя
@@ -35,12 +45,17 @@ class CheckUserPermissions
         $request_action = array_pop($current_route);
         $request_module = array_pop($current_route);
 
-        if (!$this->checkPermission($request_module, $request_action, $user_participation_info['role_id']))
-        {
+        if (!$this->checkPermission($request_module, $request_action, $user_participation_info['role_id'])) {
             return response()->json(['error' => 'Forbiddden'], 403);
         }
 
         // Если всё прошло успешно, передаем запрос дальше
+        $authUserData = Auth::user();
+        $authUserData['token'] = $token;
+        foreach ($user_participation_info as $key => $item)
+        {
+            $authUserData[$key] = $item;
+        }
         return $next($request);
     }
 
@@ -49,15 +64,18 @@ class CheckUserPermissions
      *
      * @param string $request_module Слаг запрошенного модуля.
      * @param string $request_action Действие, запрошенное в модуле.
-     * @param int $role_id ID роли пользователя.
+     * @param int    $role_id        ID роли пользователя.
      *
      * @return bool True, если пользователь имеет необходимое разрешение, false в противном случае.
      */
     public function checkPermission($request_module, $request_action, $role_id)
     {
-        $role_rights_list = SystemRolesRights::where('role_slug', '=', SystemRoles::find($role_id)->only('role_slug'))->get()->pluck('right_slug')->toArray();
+        $role_rights_list = SystemRolesRights::where('role_slug', '=', SystemRoles::find($role_id)->only('role_slug'))
+            ->get()->pluck('right_slug')->toArray();
 
-        $request_right = SystemModulesActions::where('module_slug', '=', $request_module)->where('right_action', '=', $request_action)->value('right_slug');
+        $request_right = SystemModulesActions::where('module_slug', '=', $request_module)->where(
+            'right_action', '=', $request_action
+        )->value('right_slug');
 
         return in_array($request_right, $role_rights_list);
     }

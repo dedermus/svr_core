@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Collection;
 
-
 class SvrApiUserDistrictsListResource extends JsonResource
 {
     /**
@@ -14,7 +13,7 @@ class SvrApiUserDistrictsListResource extends JsonResource
      *
      * @var bool
      */
-    public $preserveKeys = true;
+    public bool $preserveKeys = true;
 
     /**
      * Transform the resource collection into an array.

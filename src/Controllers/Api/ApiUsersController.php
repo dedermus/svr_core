@@ -5,16 +5,15 @@ namespace Svr\Core\Controllers\Api;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Models\SystemRoles;
 use Svr\Core\Models\SystemUsers;
-use Svr\Core\Models\SystemUsersNotifications;
 use Svr\Core\Models\SystemUsersRoles;
 use Svr\Core\Models\SystemUsersToken;
-use Svr\Core\Resources\AuthInfoSystemUsersResource;
+use Svr\Core\Resources\AuthInfoSystemUsersDataResource;
+use Svr\Core\Resources\AuthInfoSystemUsersDictionaryResource;
 use Svr\Core\Resources\SvrApiResponseResource;
 use Svr\Data\Models\DataCompaniesLocations;
 use Svr\Data\Models\DataUsersParticipations;
@@ -24,51 +23,9 @@ use Svr\Directories\Models\DirectoryCountriesRegionsDistrict;
 class ApiUsersController extends Controller
 {
     /**
-     * Создание новой записи.
-     *
-     * @param \Illuminate\Http\Request $request
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function store(Request $request): JsonResponse
-    {
-        $model = new SystemUsers();
-        $record = $model->userCreate($request);
-        return response()->json($record, 201);
-    }
-
-    /**
-     * Обновление существующей записи.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param int                      $id
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function update(Request $request): JsonResponse
-    {
-        $record = new SystemUsers();
-        $request->setMethod('PUT');
-        $record->userUpdate($request);
-        return response()->json($record);
-    }
-
-    /**
-     * Получение списка записей с пагинацией.
-     *
-     * @param \Illuminate\Http\Request $request
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function index(Request $request): JsonResponse
-    {
-        $perPage = $request->query('per_page', 15); // Количество записей на странице по умолчанию
-        $records = SystemUsers::paginate($perPage);
-        return response()->json($records);
-    }
-
-    /**
      * Получение информации о пользователе.
+     *
+     * @param Request $request
      *
      * @return SvrApiResponseResource|JsonResponse
      */
@@ -76,15 +33,15 @@ class ApiUsersController extends Controller
     {
         /** @var  $user - получим авторизированного пользователя */
         $user = auth()->user();
-        //Получим токен текущего пользователья
+        // получим токен текущего пользователя
         $token = $request->bearerToken();
-        //Получим данные о токене из базы
+        // получим данные о token из базы
         $token_data = SystemUsersToken::where('token_value', '=', $token)->first()->toArray();
-        //запомнили participation_id
+        // запомнили participation_id
         $participation_id = $token_data['participation_id'];
-        //получили привязки пользователя
+        // получили привязки пользователя
         $user_participation_info = DataUsersParticipations::userParticipationInfo($participation_id);
-        //собрали данные для передачи в ресурс
+        // собрали данные для передачи в ресурс
         $data = collect([
             'user' => $user,
             'user_id' => $user['user_id'],
@@ -109,14 +66,16 @@ class ApiUsersController extends Controller
     }
 
     /**
+     * Авторизация пользователя
+     *
      * @param Request $request
      *
-     * @return SvrApiResponseResource
+     * @return JsonResponse|SvrApiResponseResource
      */
-    public function authLogin(Request $request)
+    public function authLogin(Request $request): SvrApiResponseResource|JsonResponse
     {
         $model = new SystemUsers();
-        $user = null; // прееменная для пользователя
+        $user = null; // переменная для пользователя
         $filterKeys = ['user_email', 'user_password'];
         $rules = $model->getFilterValidationRules($request, $filterKeys);
         $messages = $model->getFilterValidationMessages($filterKeys);
@@ -135,14 +94,13 @@ class ApiUsersController extends Controller
         // Если получен список пользователей с одним email
         if (!is_null($users)) {
             // переберем пользователей
-            foreach ($users as &$item) {
+            foreach ($users as $item) {
                 // если email и password совпали
                 if ($item && Hash::check($credentials['user_password'], $item->user_password)) {
                     $user = $item;
                     break;  // выйдем из перебора
                 }
             }
-            unset($item);
         }
         // Если пользователь не найден
         if (is_null($user)) { //TODO переписать на нормальный структурированный вид после того как сделаем нормальный конструктор вывода
@@ -153,22 +111,35 @@ class ApiUsersController extends Controller
 
         // Последний токен пользователя
         $last_token = SystemUsersToken::userLastTokenData($user->user_id);
-        // Пытаемся получить participation_id
-        $participation_id = null;
+
         if ($last_token) {
             $last_token = $last_token->toArray();
             $participation_id = $last_token['participation_id'] ?? null;
         } else {
-            //TODO: получить какую-нибудь привязку
+            // получаем связку пользователя с хозяйствами/регионами/районами
+            $participation_last = DataUsersParticipations::where([
+                ['user_id', '=', $user['user_id']],
+                ['participation_status', '=', SystemStatusEnum::ENABLED->value]
+                ])
+                ->latest('updated_at')
+                ->first();
+            // если привязка есть
+            if (!is_null($participation_last)) {
+                $participation_id = $participation_last['participation_id'];
+            } else {
+                return response()->json(['error' => 'Пользователь не привязан ни к одному хозяйству/району/региону'], 401);
+            }
         }
-        //Создали запись в таблице токенов
-        $new_user_token_data = ((new SystemUsersToken)->userTokenStore([
+
+        // Создали запись в таблице токенов
+        (new SystemUsersToken())->userTokenStore([
             'user_id' => $user['user_id'],
             'participation_id' => $participation_id,
             'token_value' => $token,
             'token_client_ip' => $request->ip()
-        ]));
-        //Подготовили данные для передачи в ресурс
+        ]);
+
+        // Подготовили данные для передачи в ресурс
         $data = collect([
             'user_token' => $token,
             'user' => $user,
@@ -181,8 +152,8 @@ class ApiUsersController extends Controller
             'user_id' => $user['user_id'],
             'status' => true,
             'message' => '',
-            'response_resource_data' => 'Svr\Core\Resources\AuthInfoSystemUsersDataResource',
-            'response_resource_dictionary' => 'Svr\Core\Resources\AuthInfoSystemUsersDictionaryResource',
+            'response_resource_data' => AuthInfoSystemUsersDataResource::class,
+            'response_resource_dictionary' => AuthInfoSystemUsersDictionaryResource::class,
             'pagination' => [
                 'total_records' => 1,
                 'cur_page' => 1,
@@ -194,18 +165,22 @@ class ApiUsersController extends Controller
     }
 
     /**
-     * Return a validation error response.
-     *
-     * @param \Illuminate\Contracts\Validation\Validator $validator
+     * Выход пользователя
+     * @param Request $request
      *
      * @return JsonResponse
      */
-    private function validationErrorResponse($validator): JsonResponse
+    public function authLogout(Request $request): JsonResponse
     {
-        return response()->json([
-            'status' => false,
-            'message' => 'Validation error',
-            'errors' => $validator->errors()
-        ], 401);
+        $user = auth()->user();
+
+        SystemUsersToken::where([
+            ['user_id', '=', $user['user_id']],
+            ['token_value', '=', $user['token']]
+        ])->update(['token_status' => SystemStatusEnum::DISABLED->value]);
+
+        return response()->json(['message' => 'Вышли'], 201);
     }
+
+
 }

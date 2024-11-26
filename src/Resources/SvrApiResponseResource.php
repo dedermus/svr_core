@@ -24,6 +24,8 @@ class SvrApiResponseResource extends JsonResource
             'notifications' => new SvrApiNotificationsResponseResource($this->resource['user_id']),
             'pagination' => new SvrApiPaginationResponseResource($this->resource['pagination']),
         ];
+
+        // При необходимости формируется секция dictionary
         if ($this->resource['response_resource_dictionary'] !== false)
         {
             $returned_data['dictionary'] = new $this->resource['response_resource_dictionary']($this->resource);
