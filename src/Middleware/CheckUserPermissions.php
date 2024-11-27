@@ -43,9 +43,9 @@ class CheckUserPermissions
             $token_data->toArray();
         }
 
-        //запомнили participation_id
+        // - запомнили participation_id
         $participation_id = $token_data['participation_id'];
-        //получили привязки пользователя
+        // - получили привязки пользователя
         $user_participation_info = DataUsersParticipations::userParticipationInfo($participation_id);
 
         $current_route = explode('/', url()->current());
