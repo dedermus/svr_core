@@ -2,12 +2,10 @@
 
 namespace Svr\Core\Controllers\Api;
 
-use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Hash;
-use OpenAdminCore\Admin\Middleware\Session;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Models\SystemRoles;
@@ -190,5 +188,18 @@ class ApiUsersController extends Controller
         return response()->json(['message' => 'user logged out'], 200);
     }
 
+    public function authSet(Request $request)
+    {
+        $request->merge([
+            'participation_item_type' => $request->query('participation_type')
+        ]);
 
+//        'participation_item_id'	=> ['required', 'int:force'],
+//				'participation_type'	=> ['required', 'in_array:company,region,district,admin'],
+        $model = new DataUsersParticipations();
+        $filterKeys = ['participation_item_id', 'participation_type'];
+        $rules = $model->getFilterValidationRules($request, $filterKeys);
+        $messages = $model->getFilterValidationMessages($filterKeys);
+        $request->validate($rules, $messages);
+    }
 }

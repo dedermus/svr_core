@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemNotificationsTypesEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Traits\GetTableName;
+use Svr\Core\Traits\GetValidationRules;
 
 /**
  * Модель Setting
@@ -17,6 +18,7 @@ class SystemUsersNotificationsMessages extends Model
 {
     use GetTableName;
     use HasFactory;
+    use GetValidationRules;
 
     /**
      * Точное название таблицы с учетом схемы
@@ -122,29 +124,6 @@ class SystemUsersNotificationsMessages extends Model
     }
 
     /**
-     * Валидация запроса
-     * @param Request $request
-     */
-    private function validateRequest(Request $request): void
-    {
-        $rules = $this->getValidationRules($request);
-        $messages = $this->getValidationMessages();
-        $request->validate($rules, $messages);
-    }
-
-    /**
-     * Получить правила валидации по переданному фильтру полей
-     * @param Request $request    - Запрос
-     * @param         $filterKeys - Список необходимых полей
-     *
-     * @return array
-     */
-    public function getFilterValidationRules(Request $request, $filterKeys): array
-    {
-        return array_intersect_key($this->getValidationRules($request), array_flip($filterKeys));
-    }
-
-    /**
      * Получить правила валидации
      * @param Request $request
      * @return array
@@ -178,17 +157,6 @@ class SystemUsersNotificationsMessages extends Model
                 Rule::enum(SystemStatusEnum::class)
             ],
         ];
-    }
-
-    /**
-     * Получить сообщения об ошибках валидации по переданному фильтру полей
-     * @param $filterKeys - Список необходимых полей
-     *
-     * @return array
-     */
-    public function getFilterValidationMessages($filterKeys): array
-    {
-        return array_intersect_key($this->getValidationMessages(), array_flip($filterKeys));
     }
 
     /**

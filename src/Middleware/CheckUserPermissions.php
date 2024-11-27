@@ -63,6 +63,7 @@ class CheckUserPermissions
         {
             $authUserData[$key] = $item;
         }
+
         return $next($request);
     }
 

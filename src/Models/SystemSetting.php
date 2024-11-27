@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Svr\Core\Traits\GetTableName;
+use Svr\Core\Traits\GetValidationRules;
 
 /**
  * Модель Setting
@@ -15,6 +16,7 @@ class SystemSetting extends Model
 {
     use GetTableName;
     use HasFactory;
+    use GetValidationRules;
 
     /**
      * Точное название таблицы с учетом схемы
@@ -116,31 +118,6 @@ class SystemSetting extends Model
     }
 
     /**
-     * Валидация запроса
-     * @param Request $request
-     *
-     * @return void
-     */
-    private function validateRequest(Request $request): void
-    {
-        $rules = $this->getValidationRules($request);
-        $messages = $this->getValidationMessages();
-        $request->validate($rules, $messages);
-    }
-
-    /**
-     * Получить правила валидации по переданному фильтру полей
-     * @param Request $request    - Запрос
-     * @param         $filterKeys - Список необходимых полей
-     *
-     * @return array
-     */
-    public function getFilterValidationRules(Request $request, $filterKeys): array
-    {
-        return array_intersect_key($this->getValidationRules($request), array_flip($filterKeys));
-    }
-
-    /**
      * Получить правила валидации
      * @param Request $request
      * @return array
@@ -160,17 +137,6 @@ class SystemSetting extends Model
             'setting_value' => 'required|string',
             'setting_value_alt' => 'nullable|string|max:255',
         ];
-    }
-
-    /**
-     * Получить сообщения об ошибках валидации по переданному фильтру полей
-     * @param $filterKeys - Список необходимых полей
-     *
-     * @return array
-     */
-    public function getFilterValidationMessages($filterKeys): array
-    {
-        return array_intersect_key($this->getValidationMessages(), array_flip($filterKeys));
     }
 
     /**

@@ -12,12 +12,11 @@ use Svr\Core\Enums\SystemStatusNotificationEnum;
 use Svr\Core\Traits\GetEnums;
 use Svr\Core\Traits\GetTableName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
+use Svr\Core\Traits\GetValidationRules;
 use Zebra_Image;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
@@ -26,6 +25,7 @@ class SystemUsers extends Authenticatable
 {
     use GetEnums;
     use GetTableName;
+    use GetValidationRules;
     use AuthenticatableTrait;
     use HasFactory;
     use Notifiable;
@@ -388,29 +388,6 @@ class SystemUsers extends Authenticatable
     }
 
     /**
-     * Валидация запроса
-     * @param Request $request
-     */
-    private function validateRequest(Request $request): void
-    {
-        $rules = $this->getValidationRules($request);
-        $messages = $this->getValidationMessages();
-        $request->validate($rules, $messages);
-    }
-
-    /**
-     * Получить правила валидации по переданному фильтру полей
-     * @param Request $request      - Запрос
-     * @param         $filterKeys   - Список необходимых полей
-     *
-     * @return array
-     */
-    public function getFilterValidationRules(Request $request, $filterKeys): array
-    {
-        return array_intersect_key($this->getValidationRules($request), array_flip($filterKeys));
-    }
-
-    /**
      * Получить правила валидации
      * @param Request $request
      * @return array
@@ -462,17 +439,6 @@ class SystemUsers extends Authenticatable
                 Rule::enum(SystemStatusDeleteEnum::class)
             ],
         ];
-    }
-
-    /**
-     * Получить сообщения об ошибках валидации по переданному фильтру полей
-     * @param $filterKeys   - Список необходимых полей
-     *
-     * @return array
-     */
-    public function getFilterValidationMessages($filterKeys): array
-    {
-        return array_intersect_key($this->getValidationMessages(), array_flip($filterKeys));
     }
 
     /**

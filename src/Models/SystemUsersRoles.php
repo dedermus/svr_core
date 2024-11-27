@@ -97,15 +97,10 @@ class SystemUsersRoles extends Model
         }
 
         // Получаем список ролей пользователя
-        /*$userRolesList = self::leftJoin('system.system_roles', 'system.system_roles.role_slug', '=', 'system.system_users_roles.role_slug')
-            ->where('user_id', $user_id)
-            ->get();*/
-        $userRolesList = DB::table('system.system_users_roles')
+        return DB::table('system.system_users_roles')
             ->leftJoin('system.system_roles', 'system.system_roles.role_slug', '=', 'system.system_users_roles.role_slug')
             ->where('user_id', $user_id)
             ->get();
-
-        return $userRolesList;
     }
 
     /**

@@ -10,10 +10,10 @@ use Svr\Core\Controllers\Api\ApiUsersController;
 |
 */
 
-Route::prefix(config('svr.api_prefix'))->group(function ()
-{
+Route::prefix(config('svr.api_prefix'))->group(function () {
     Route::get('auth/info', [ApiUsersController::class, 'authInfo'])->middleware(['auth:svr_api', 'api']);
     Route::get('auth/logout', [ApiUsersController::class, 'authLogout'])->middleware(['auth:svr_api', 'api']);
+    Route::get('auth/set', [ApiUsersController::class, 'authSet'])->middleware(['auth:svr_api', 'api']);
     Route::post('auth/login', [ApiUsersController::class, 'authLogin']);
 
 });
