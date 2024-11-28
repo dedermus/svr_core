@@ -476,22 +476,22 @@ class SystemUsers extends Authenticatable
     /**
      * Получить коллекцию аватар пользователя
      *
-     * @param int $user_id
+     * @param $user_id
      * @return array
      */
-    public function getCurrentUserAvatar(int $user_id): array
+    public function getCurrentUserAvatar($user_id): array
     {
         $result = [];
         $avatar = $this->find($user_id);
 
-        if ($avatar) {
+        if (!is_null($avatar->user_avatar)) {
             $avatarPath = $this->getPathAvatar() . $avatar->user_avatar;
             foreach ($this->avatarPostfix as $postfix) {
                 $result['user_avatar' . $postfix] = asset($avatarPath . $postfix . '.' . $this->avatarExp);
             }
         } else {
             foreach ($this->avatarPostfix as $postfix) {
-                $result['user_avatar' . $postfix] = '';
+                $result['user_avatar' . $postfix] = null;
             }
         }
 

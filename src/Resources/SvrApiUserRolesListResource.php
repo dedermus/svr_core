@@ -27,8 +27,10 @@ class SvrApiUserRolesListResource extends JsonResource
         $returned_data = [];
         foreach ($this->resource['user_roles_list'] as $value)
         {
-            $value->user_role_id = $this->resource['user_participation_info']['role_id'];
-            $returned_data[$value->role_id] = new SvrApiUserRoleResource(collect($value));
+            if (isset($this->resource['user_participation_info']['role_id'])) {
+                $value->user_role_id = $this->resource['user_participation_info']['role_id'];
+                $returned_data[$value->role_id] = new SvrApiUserRoleResource(collect($value));
+            }
         }
         return $returned_data;
     }

@@ -26,8 +26,10 @@ class SvrApiUserDistrictsListResource extends JsonResource
         $returned_data = [];
         foreach ($this->resource['user_districts_list'] as $value)
         {
-            $value->user_district_id = $this->resource['user_participation_info']['district_id'];
-            $returned_data[$value->district_id] = new SvrApiUserDistrictResource(collect($value));
+            if (isset($this->resource['user_participation_info']['district_id'])) {
+                $value->user_district_id = $this->resource['user_participation_info']['district_id'];
+                $returned_data[$value->district_id] = new SvrApiUserDistrictResource(collect($value));
+            }
         }
         return $returned_data;
     }

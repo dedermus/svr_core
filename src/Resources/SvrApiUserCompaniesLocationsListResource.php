@@ -27,8 +27,10 @@ class SvrApiUserCompaniesLocationsListResource extends JsonResource
         $returned_data = [];
         foreach ($this->resource['user_companies_locations_list'] as $value)
         {
-            $value->user_company_location_id = $this->resource['user_participation_info']['company_location_id'];
-            $returned_data[$value->company_location_id] = new SvrApiUserCompanyLocationResource(collect($value));
+            if (isset($this->resource['user_participation_info']['company_location_id'])) {
+                $value->user_company_location_id = $this->resource['user_participation_info']['company_location_id'];
+                $returned_data[$value->company_location_id] = new SvrApiUserCompanyLocationResource(collect($value));
+            }
         }
         return $returned_data;
     }
