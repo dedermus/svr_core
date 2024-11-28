@@ -28,6 +28,7 @@ class AuthInfoSystemUsersDataResource extends JsonResource
             'user_avatar_big' => $this->resource['avatars']['user_avatar_big'],
             'user_roles_list' => collect($this->resource['user_roles_list'])->pluck('role_id'),
             'user_companies_locations_list' => collect($this->resource['user_companies_locations_list'])->pluck('company_location_id'),
+            'user_districts_list' => collect($this->resource['user_districts_list'])->pluck('district_id'),
             'user_regions_list' => collect($this->resource['user_regions_list'])->pluck('region_id'),
         ];
     }

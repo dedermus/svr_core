@@ -12,7 +12,6 @@ trait GetEnums
     public static function get_value_list(): array
     {
         return array_column(self::cases(), 'value');
-
     }
 
     /**
@@ -25,6 +24,11 @@ trait GetEnums
         return array_column(self::cases(), 'name');
     }
 
+    /**
+     * Get option list
+     *
+     * @return array
+     */
     public static function get_option_list(): array
     {
         return array_combine(self::get_value_list(), self::get_value_list());

@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Collection;
 
-
 class SvrApiUserRegionResource extends JsonResource
 {
 
@@ -20,7 +19,7 @@ class SvrApiUserRegionResource extends JsonResource
     {
         $region_data = [
             'region_id' => $this->resource['region_id'],
-            'region_name'=> $this->resource['region_name'],
+            'region_im'=> $this->resource['region_name'],
         ];
 
         if (isset($this->resource['user_region_id']))

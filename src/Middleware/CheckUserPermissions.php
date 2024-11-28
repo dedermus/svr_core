@@ -56,9 +56,13 @@ class CheckUserPermissions
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
+        // определим, является ли пользователь администратором по указанным привязкам
+
         // Если всё прошло успешно, передаем запрос дальше
         $authUserData = Auth::user();
         $authUserData['token'] = $token;
+        $authUserData['participation_id'] = $participation_id;
+        $authUserData['user_participation_info'] = $user_participation_info;
         foreach ($user_participation_info as $key => $item)
         {
             $authUserData[$key] = $item;

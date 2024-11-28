@@ -20,7 +20,7 @@ class SvrApiUserDistrictResource extends JsonResource
     {
         $district_data = [
             'district_id' => $this->resource['district_id'],
-            'district_name'=> $this->resource['district_name'],
+            'district_im'=> $this->resource['district_name'],
         ];
 
         if (isset($this->resource['user_district_id']))

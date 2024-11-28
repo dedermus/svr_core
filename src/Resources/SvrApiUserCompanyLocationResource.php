@@ -23,8 +23,6 @@ class SvrApiUserCompanyLocationResource extends JsonResource
             'company_id'=> $this->resource['company_id'],
             'company_name_short' => $this->resource['company_name_short'],
             'company_name_full' => $this->resource['company_name_full'],
-            'country_name' => $this->resource['country_name'],
-            'country_id' => $this->resource['country_id'],
             'region_name' => $this->resource['region_name'],
             'region_id' => $this->resource['region_id'],
             'district_name' => $this->resource['district_name'],
