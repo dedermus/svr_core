@@ -5,6 +5,7 @@ namespace Svr\Core\Controllers\Api;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersRoles;
 use Svr\Core\Models\SystemUsersToken;
@@ -35,7 +36,8 @@ class ApiUsersController extends Controller
         /** @var SystemUsers $user */
         $user = SystemUsers::where([
             ['user_id', '=', $request->user_id],
-        ])->first()->toArray();
+            ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
+        ])->first();
 
         $message = is_null($user)
             ? 'Пользователь не найден'
@@ -98,7 +100,8 @@ class ApiUsersController extends Controller
         /** @var SystemUsers $user */
         $user = SystemUsers::where([
             ['user_id', '=', $request->user_id],
-        ])->first()->toArray();
+            ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
+        ])->first();
 
         $user_id = (isset($user['user_id'])) ? $user['user_id'] : null;
         $token_data = SystemUsersToken::userLastTokenData($user_id);

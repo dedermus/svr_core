@@ -482,9 +482,13 @@ class SystemUsers extends Authenticatable
     public function getCurrentUserAvatar($user_id): array
     {
         $result = [];
-        $avatar = $this->find($user_id);
 
-        if (!is_null($avatar->user_avatar)) {
+        $avatar = SystemUsers::where([
+            ['user_id', '=', $user_id],
+        ])->first();
+
+        if (!is_null($avatar)) {
+            $avatar->toArray();
             $avatarPath = $this->getPathAvatar() . $avatar->user_avatar;
             foreach ($this->avatarPostfix as $postfix) {
                 $result['user_avatar' . $postfix] = asset($avatarPath . $postfix . '.' . $this->avatarExp);
