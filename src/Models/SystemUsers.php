@@ -376,11 +376,13 @@ class SystemUsers extends Authenticatable
     {
         $this->validateRequest($request);
         $data = $request->all();
-        $data['user_avatar'] = $this->addFileAvatar($request);
         $id = $data[$this->primaryKey] ?? null;
 
         if ($id) {
             $modules_data = $this->find($id);
+            if (isset($data['user_avatar'])) {
+                $data['user_avatar'] = $this->addFileAvatar($request);
+            }
             $modules_data->update($data);
             $user_data = $this->findOrFail($id);
             SystemUsersRoles::userRolesStore($user_data, $data['user_roles_list']);
