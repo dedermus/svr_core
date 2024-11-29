@@ -60,6 +60,10 @@ class CheckUserPermissions
 
         // Если всё прошло успешно, передаем запрос дальше
         $authUserData = Auth::user();
+        $authUserData['pagination_per_page'] = $request['pagination_per_page'] ?? 100;
+        $authUserData['pagination_cur_page'] = $request['pagination_cur_page'] ?? 1;
+        $authUserData['order_field'] = $request['order_field'] ?? false;
+        $authUserData['order_direction'] = $request['order_direction'] ?? 'asc';
         $authUserData['token'] = $token;
         $authUserData['participation_id'] = $participation_id;
         $authUserData['user_participation_info'] = $user_participation_info;
