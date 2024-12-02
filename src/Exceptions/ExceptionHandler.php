@@ -2,6 +2,7 @@
 
 namespace Svr\Core\Exceptions;
 
+use Exception;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Container\Container;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -31,7 +32,8 @@ class ExceptionHandler
                     return $response->make(
                         content: [
                             'status'  => 'error',
-                            'message' => $e->getMessage()
+                            'message' => $e->getMessage(),
+                            'data' =>[]
                         ],
                         status: $e->getStatusCode(),
                     );
@@ -40,7 +42,8 @@ class ExceptionHandler
                     return $response->make(
                         content: [
                             'status'  => 'error',
-                            'message' => $e->getMessage()
+                            'message' => $e->getMessage(),
+                            'data' =>[]
                         ],
                         status: $e->getStatusCode(),
                     );
@@ -51,7 +54,7 @@ class ExceptionHandler
                         content: [
                             'status'  => 'error',
                             'message' => $e->getMessage(),
-                            'message2' => "Токен не валиден. Приплыли",
+                            'data' =>[]
                         ],
                         status: 401,
                     );
@@ -60,11 +63,24 @@ class ExceptionHandler
                     return $response->make(
                         content: [
                             'status'  => 'error',
-                            'message' => $e->getMessage()
+                            'message' => $e->getMessage(),
+                            'data' =>[]
                         ],
-                        status: $e->getStatusCode(),
+                        status: 400,
                     );
                 }
+
+                if ($e instanceof Exception) {
+                    return $response->make(
+                        content: [
+                            'status'  => 'error',
+                            'message' => $e->getMessage(),
+                            'data' =>[]
+                        ],
+                        status: $e->getCode(),
+                    );
+                }
+
                 return false;
             }
         });
