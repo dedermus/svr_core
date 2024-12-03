@@ -54,7 +54,7 @@ class ApiValidationErrors
             }
             return response()->json([
                 'status'  => 'error',
-                'message' => $errors->getMessage(),
+                'message' => 'Ошибка типа',
                 'data'  => [],
             ], $code);
         }
