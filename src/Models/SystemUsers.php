@@ -489,7 +489,7 @@ class SystemUsers extends Authenticatable
             ['user_id', '=', $user_id],
         ])->first();
 
-        if (!is_null($avatar)) {
+        if (!is_null($avatar->user_avatar)) {
             $avatar->toArray();
             $avatarPath = $this->getPathAvatar() . $avatar->user_avatar;
             foreach ($this->avatarPostfix as $postfix) {
