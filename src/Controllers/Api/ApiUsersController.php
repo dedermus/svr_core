@@ -31,7 +31,9 @@ class ApiUsersController extends Controller
         $user = auth()->user();
 
         SystemUsers::where('user_id', $user->user_id)
-            ->update($request->all());
+            ->update($request->only('user_herriot_login', 'user_herriot_password',
+                'user_herriot_web_login', 'user_herriot_apikey',
+                'user_herriot_issuerid', 'user_herriot_serviceid'));
 
         $data = $this->prepareUserData($user);
         $data['message'] = 'Логин и пароль Хорриота установлены';
