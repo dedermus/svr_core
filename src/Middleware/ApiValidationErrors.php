@@ -25,7 +25,7 @@ class ApiValidationErrors
                 'data'  => [],
             ], 422);
         }
-        // Обработка исключения валидации (ValidationException)
+        // Обработка исключения Exception
         if ($response->exception instanceof Exception) {
             $errors = $response->exception;
             return response()->json([

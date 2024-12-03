@@ -70,16 +70,6 @@ class ExceptionHandler
                     );
                 }
 
-                if ($e instanceof Exception) {
-                    return $response->make(
-                        content: [
-                            'status'  => 'error',
-                            'message' => $e->getMessage(),
-                            'data' =>[]
-                        ],
-                        status: $e->getCode(),
-                    );
-                }
 
                 return false;
             }
