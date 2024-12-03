@@ -4,6 +4,7 @@ namespace Svr\Core\Middleware;
 
 use Closure;
 use Exception;
+use http\Exception\InvalidArgumentException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -28,11 +29,17 @@ class ApiValidationErrors
         // Обработка исключения Exception
         if ($response->exception instanceof Exception) {
             $errors = $response->exception;
+            $code = 200;
+            if ($errors->getCode() != 0) {
+                $code = $errors->getCode();
+            } else {
+                $code = $response->getStatusCode();
+            }
             return response()->json([
                 'status'  => 'error',
                 'message' => $errors->getMessage(),
                 'data'  => [],
-            ], $errors->getCode());
+            ], $code);
         }
         return $response;
     }
