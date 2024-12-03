@@ -8,6 +8,7 @@ use http\Exception\InvalidArgumentException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use TypeError;
 
 class ApiValidationErrors
 {
@@ -41,6 +42,23 @@ class ApiValidationErrors
                 'data'  => [],
             ], $code);
         }
+
+        // Обработка исключения TypeError
+        if ($response->exception instanceof TypeError) {
+            $errors = $response->exception;
+            $code = 500;
+            if ($errors->getCode() != 0) {
+                $code = $errors->getCode();
+            } else {
+                $code = $response->getStatusCode();
+            }
+            return response()->json([
+                'status'  => 'error',
+                'message' => $errors->getMessage(),
+                'data'  => [],
+            ], $code);
+        }
+
         return $response;
     }
 }
