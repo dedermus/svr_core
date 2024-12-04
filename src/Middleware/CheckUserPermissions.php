@@ -11,12 +11,14 @@ use Svr\Core\Models\SystemRoles;
 use Svr\Core\Models\SystemRolesRights;
 use Svr\Core\Models\SystemUsersToken;
 use Svr\Data\Models\DataUsersParticipations;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckUserPermissions
 {
     /**
-     * Проверка прав пользователя
+     * Проверка прав пользователя.
+     *
      * @param Request $request
      * @param Closure $next
      *
@@ -24,79 +26,120 @@ class CheckUserPermissions
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // получим токен текущего пользователя
         $token = $request->bearerToken();
-        // получим данные о токене из базы
-        $token_data = SystemUsersToken::where([
-            ['token_value', '=', $token],
-            ['token_status', '=', SystemStatusEnum::ENABLED->value],
-        ])->whereNotNull('participation_id')
-            ->first();
+        $tokenData = $this->getTokenData($token);
 
-        // если токен не найден или DISABLED
-        if (is_null($token_data)) {
-            return response()->json([
-                'message' => 'Unauthenticated'
-            ], 401);
-        } else {
-            // иначе преобразуем результат в массив
-            $token_data->toArray();
+        if (is_null($tokenData)) {
+            return $this->unauthenticatedResponse();
         }
 
-        // - запомнили participation_id
-        $participation_id = $token_data['participation_id'];
-        // - получили привязки пользователя
-        $user_participation_info = DataUsersParticipations::userParticipationInfo($participation_id);
+        $participationId = $tokenData['participation_id'];
+        $userParticipationInfo = DataUsersParticipations::userParticipationInfo($participationId);
 
-        $first_route = explode(config('svr.api_prefix'), url()->current());
+        [$requestModule, $requestAction] = $this->parseRequestRoute();
 
-        $current_route = explode('/', ltrim($first_route[1], '/'));
-
-        $request_module = array_shift($current_route);
-        $request_action = array_shift($current_route);
-        //$request_params = array_pop($current_route);
-
-        if (!$this->checkPermission($request_module, $request_action, $user_participation_info['role_id'])) {
-            return response()->json(['error' => 'Forbidden'], 403);
+        if (!$this->checkPermission($requestModule, $requestAction, $userParticipationInfo['role_id'])) {
+            return $this->forbiddenResponse();
         }
 
-        // определим, является ли пользователь администратором по указанным привязкам
-
-        // Если всё прошло успешно, передаем запрос дальше
-        $authUserData = Auth::user();
-        $authUserData['pagination_per_page'] = $request['pagination_per_page'] ?? 100;
-        $authUserData['pagination_cur_page'] = $request['pagination_cur_page'] ?? 1;
-        $authUserData['order_field'] = $request['order_field'] ?? false;
-        $authUserData['order_direction'] = $request['order_direction'] ?? 'asc';
-        $authUserData['token'] = $token;
-        $authUserData['participation_id'] = $participation_id;
-        $authUserData['user_participation_info'] = $user_participation_info;
-        foreach ($user_participation_info as $key => $item)
-        {
-            $authUserData[$key] = $item;
-        }
+        $this->setAuthUserData($request, $token, $participationId, $userParticipationInfo);
 
         return $next($request);
     }
 
     /**
+     * Получить данные токена из базы данных.
+     *
+     * @param string $token
+     * @return array|null
+     */
+    private function getTokenData(string $token): ?array
+    {
+        return SystemUsersToken::where([
+            ['token_value', '=', $token],
+            ['token_status', '=', SystemStatusEnum::ENABLED->value],
+        ])->whereNotNull('participation_id')
+            ->first()
+            ->toArray();
+    }
+
+    /**
+     * Возвращает ответ для неаутентифицированного пользователя.
+     *
+     * @return JsonResponse
+     */
+    private function unauthenticatedResponse(): JsonResponse
+    {
+        return response()->json(['message' => 'Unauthenticated'], 401);
+    }
+
+    /**
+     * Возвращает ответ для запрещенного доступа.
+     *
+     * @return JsonResponse
+     */
+    private function forbiddenResponse(): JsonResponse
+    {
+        return response()->json(['error' => 'Forbidden'], 403);
+    }
+
+    /**
+     * Разбирает текущий маршрут запроса.
+     *
+     * @return array
+     */
+    private function parseRequestRoute(): array
+    {
+        $routeParts = explode(config('svr.api_prefix'), url()->current());
+        $currentRoute = explode('/', ltrim($routeParts[1], '/'));
+
+        return [array_shift($currentRoute), array_shift($currentRoute)];
+    }
+
+    /**
+     * Устанавливает данные аутентифицированного пользователя.
+     *
+     * @param Request $request
+     * @param string $token
+     * @param int $participationId
+     * @param array $userParticipationInfo
+     */
+    private function setAuthUserData(Request $request, string $token, int $participationId, array $userParticipationInfo): void
+    {
+        $authUserData = Auth::user();
+        $authUserData['pagination_per_page'] = $request->input('pagination_per_page', 100);
+        $authUserData['pagination_cur_page'] = $request->input('pagination_cur_page', 1);
+        $authUserData['order_field'] = $request->input('order_field', false);
+        $authUserData['order_direction'] = $request->input('order_direction', 'asc');
+        $authUserData['token'] = $token;
+        $authUserData['participation_id'] = $participationId;
+        $authUserData['user_participation_info'] = $userParticipationInfo;
+
+        foreach ($userParticipationInfo as $key => $item) {
+            $authUserData[$key] = $item;
+        }
+    }
+
+    /**
      * Проверяет, имеет ли пользователь необходимое разрешение для доступа к определённому модулю и действию.
      *
-     * @param $request_module   - Слаг запрошенного модуля.
-     * @param $request_action   - Действие, запрошенное в модуле.
-     * @param $role_id          - ID роли пользователя.
+     * @param string $requestModule
+     * @param string $requestAction
+     * @param int $roleId
      *
-     * @return bool             - True, если пользователь имеет необходимое разрешение, false в противном случае.
+     * @return bool
      */
-    public function checkPermission($request_module, $request_action, $role_id): bool
+    public function checkPermission(string $requestModule, string $requestAction, int $roleId): bool
     {
-        $role_rights_list = SystemRolesRights::where('role_slug', '=', SystemRoles::find($role_id)->only('role_slug'))
-            ->get()->pluck('right_slug')->toArray();
+        $roleSlug = SystemRoles::find($roleId)->role_slug;
+        $roleRightsList = SystemRolesRights::where('role_slug', $roleSlug)
+            ->pluck('right_slug')
+            ->toArray();
 
-        $request_right = SystemModulesActions::where('module_slug', '=', $request_module)->where(
-            'right_action', '=', $request_action
-        )->value('right_slug');
+        $requestRight = SystemModulesActions::where('module_slug', $requestModule)
+            ->where('right_action', $requestAction)
+            ->value('right_slug');
 
-        return in_array($request_right, $role_rights_list);
+        return in_array($requestRight, $roleRightsList);
     }
 }

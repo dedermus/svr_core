@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
+use Svr\Core\Exceptions\CustomException;
 use Svr\Core\Models\SystemRoles;
 use Svr\Core\Models\SystemSetting;
 use Svr\Core\Models\SystemUsers;
@@ -41,8 +42,8 @@ class ApiAuthController extends Controller
         $token = $request->bearerToken();
         $tokenData = SystemUsersToken::where('token_value', $token)->first();
 
-        if (!$tokenData) {
-            return response()->json(['message' => 'Токен не найден'], 404);
+        if ($tokenData) {
+            throw new CustomException('Токен не найден', 404);
         }
 
         $participationId = $tokenData->participation_id;
