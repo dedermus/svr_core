@@ -7,6 +7,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Svr\Core\Exceptions\CustomException;
 use TypeError;
 
 class ApiValidationErrors
@@ -33,6 +34,27 @@ class ApiValidationErrors
                 'data'    => [],
             ], 422);
         }
+
+        // Обработка кастомного исключения CustomException
+        if ($response->exception instanceof CustomException) {
+            $errors = $response->exception;
+            $code = $errors->getCode() ?: $response->getStatusCode();
+
+            return response()->json([
+                'status' => false,
+                'message' => $errors->getMessage(),
+                'trace' => config('app.debug') ? array_slice($errors->getTrace(), 0, 1) : [],
+                'data' => [],
+                'dictionary' => [],
+                "pagination" =>  [
+                    "total_records" => 1,
+                    "max_page" => 1,
+                    "cur_page" => 1,
+                    "per_page" => 1
+                ],
+            ], $code);
+        }
+
 
 //        // Обработка исключения Exception
 //        if ($response->exception instanceof Exception) {

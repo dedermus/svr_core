@@ -192,8 +192,9 @@ class ApiUsersController extends Controller
      *
      * @return SvrApiResponseResource|JsonResponse Возвращает ресурс с данными пользователя или JSON ответ с ошибкой.
      */
-    public function usersData(Request $request): SvrApiResponseResource|JsonResponse
+    public function usersData(Request $request, $user_id): SvrApiResponseResource|JsonResponse
     {
+        $request->merge(['user_id' => $user_id]);
         $this->validateUserRequest($request, ['user_id']);
 
         $user = $this->getUser($request->user_id);

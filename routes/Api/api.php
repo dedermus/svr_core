@@ -27,7 +27,7 @@ Route::prefix(config('svr.api_prefix'))->group(function () {
 });
 Route::prefix(config('svr.api_prefix'))->group(function () {
     // получить информацию о пользователе
-    Route::get('users/data', [ApiUsersController::class, 'usersData'])->middleware(['auth:svr_api', 'api']);
+    Route::get('users/data/{user_id}', [ApiUsersController::class, 'usersData'])->middleware(['auth:svr_api', 'api']);
     // редактирование пользователя
     Route::post('users/edit', [ApiUsersController::class, 'usersEdit'])->middleware(['auth:svr_api', 'api']);
     // изменение пароля пользователя
