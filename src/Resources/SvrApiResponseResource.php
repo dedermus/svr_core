@@ -20,10 +20,14 @@ class SvrApiResponseResource extends JsonResource
         $returned_data = [
             'status'        => $this->resource['status'],
             'message'       => $this->resource['message'],
-            'data'          => new $this->resource['response_resource_data']($this->resource),
             'notifications' => new SvrApiNotificationsResponseResource($this->resource['user_id']),
             'pagination'    => new SvrApiPaginationResponseResource($this->resource['pagination']),
         ];
+
+        // При необходимости формируется секция data
+        if ($this->resource['response_resource_data'] !== false) {
+            $returned_data['data'] = new $this->resource['response_resource_data']($this->resource);
+        }
 
         // При необходимости формируется секция dictionary
         if ($this->resource['response_resource_dictionary'] !== false) {
