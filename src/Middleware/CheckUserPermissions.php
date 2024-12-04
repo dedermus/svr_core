@@ -48,9 +48,13 @@ class CheckUserPermissions
         // - получили привязки пользователя
         $user_participation_info = DataUsersParticipations::userParticipationInfo($participation_id);
 
-        $current_route = explode('/', url()->current());
-        $request_action = array_pop($current_route);
-        $request_module = array_pop($current_route);
+        $first_route = explode(config('svr.api_prefix'), url()->current());
+
+        $current_route = explode('/', ltrim($first_route[1], '/'));
+
+        $request_module = array_shift($current_route);
+        $request_action = array_shift($current_route);
+        //$request_params = array_pop($current_route);
 
         if (!$this->checkPermission($request_module, $request_action, $user_participation_info['role_id'])) {
             return response()->json(['error' => 'Forbidden'], 403);
