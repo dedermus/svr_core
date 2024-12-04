@@ -34,31 +34,31 @@ class ApiValidationErrors
             ], 422);
         }
 
-        // Обработка исключения Exception
-        if ($response->exception instanceof Exception) {
-            $errors = $response->exception;
-            $code = $errors->getCode() ?: $response->getStatusCode();
-
-            return response()->json([
-                'status' => 'error',
-                'message' => $errors->getMessage(),
-                'trace' => config('app.debug') ? $errors->getTrace() : [],
-                'data'    => [],
-            ], $code);
-        }
-
-        // Обработка исключения TypeError
-        if ($response->exception instanceof TypeError) {
-            $errors = $response->exception;
-            $code = $errors->getCode() ?: $response->getStatusCode();
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Ошибка типа',
-                'trace' => config('app.debug') ? $errors->getTrace() : [],
-                'data'    => [],
-            ], $code);
-        }
+//        // Обработка исключения Exception
+//        if ($response->exception instanceof Exception) {
+//            $errors = $response->exception;
+//            $code = $errors->getCode() ?: $response->getStatusCode();
+//
+//            return response()->json([
+//                'status' => 'error',
+//                'message' => $errors->getMessage(),
+//                'trace' => config('app.debug') ? $errors->getTrace() : [],
+//                'data'    => [],
+//            ], $code);
+//        }
+//
+//        // Обработка исключения TypeError
+//        if ($response->exception instanceof TypeError) {
+//            $errors = $response->exception;
+//            $code = $errors->getCode() ?: $response->getStatusCode();
+//
+//            return response()->json([
+//                'status' => 'error',
+//                'message' => 'Ошибка типа',
+//                'trace' => config('app.debug') ? $errors->getTrace() : [],
+//                'data'    => [],
+//            ], $code);
+//        }
 
         return $response;
     }
