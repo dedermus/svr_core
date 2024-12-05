@@ -35,6 +35,7 @@ class ApiAuthController extends Controller
      * @param Request $request HTTP запрос с токеном авторизации.
      *
      * @return SvrApiResponseResource|JsonResponse Возвращает ресурс с данными пользователя или JSON ответ с ошибкой.
+     * @throws CustomException
      */
     public function authInfo(Request $request): SvrApiResponseResource|JsonResponse
     {
@@ -42,7 +43,7 @@ class ApiAuthController extends Controller
         $token = $request->bearerToken();
         $tokenData = SystemUsersToken::where('token_value', $token)->first();
 
-        if ($tokenData) {
+        if (!$tokenData) {
             throw new CustomException('Токен не найден', 404);
         }
 
@@ -79,6 +80,7 @@ class ApiAuthController extends Controller
      * @param Request $request HTTP запрос с данными для авторизации.
      *
      * @return JsonResponse|SvrApiResponseResource Возвращает ресурс с данными авторизации или JSON ответ с ошибкой.
+     * @throws CustomException
      */
     public function authLogin(Request $request): SvrApiResponseResource|JsonResponse
     {
@@ -99,7 +101,7 @@ class ApiAuthController extends Controller
         $user = $users->first(fn($item) => Hash::check($credentials['user_password'], $item->user_password));
 
         if (!$user) {
-            return response()->json(['error' => 'Неправильный логин или пароль'], 401);
+            throw new CustomException('Неправильный логин или пароль', 401);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -108,7 +110,7 @@ class ApiAuthController extends Controller
         $participationId = $lastToken ? $lastToken->participation_id : $this->getParticipationId($user);
 
         if (!$participationId) {
-            return response()->json(['error' => 'Пользователь не привязан ни к одному хозяйству/району/региону'], 401);
+            throw new CustomException('Пользователь не привязан ни к одному хозяйству/району/региону', 401);
         }
 
         (new SystemUsersToken())->userTokenStore([
