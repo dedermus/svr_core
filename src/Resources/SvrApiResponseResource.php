@@ -24,15 +24,15 @@ class SvrApiResponseResource extends JsonResource
             'pagination'    => new SvrApiPaginationResponseResource($this->resource['pagination']),
         ];
 
-		// При необходимости формируется секция data
-		if ($this->resource['response_resource_data'] !== false) {
-			$returned_data['data'] = new $this->resource['response_resource_data']($this->resource);
-		}
+        // При необходимости формируется секция data
+        if ($this->resource['response_resource_data'] !== false) {
+            $returned_data['data'] = new $this->resource['response_resource_data']($this->resource);
+        }
 
-		// При необходимости формируется секция dictionary
-		if ($this->resource['response_resource_dictionary'] !== false) {
-			$returned_data['dictionary'] = new $this->resource['response_resource_dictionary']($this->resource);
-		}
+        // При необходимости формируется секция dictionary
+        if ($this->resource['response_resource_dictionary'] !== false) {
+            $returned_data['dictionary'] = new $this->resource['response_resource_dictionary']($this->resource);
+        }
 
         return $returned_data;
     }
