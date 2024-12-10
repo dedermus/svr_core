@@ -37,6 +37,7 @@ class ApiValidationErrors
      * Обработка исключения валидации.
      *
      * @param ValidationException $exception
+     *
      * @return JsonResponse
      */
     private function handleValidationException(ValidationException $exception): JsonResponse
@@ -52,57 +53,62 @@ class ApiValidationErrors
      * Обработка кастомного исключения.
      *
      * @param CustomException $exception
+     *
      * @return JsonResponse
      */
     private function handleCustomException(CustomException $exception): JsonResponse
     {
         $code = $exception->getCode() ?: 500;
-        $trace = config('app.debug') ? array_slice($exception->getTrace(), 0, 1) : [];
-
-        return response()->json([
-            'status' => false,
-            'message' => $exception->getMessage(),
-            'trace' => $trace,
-            'data' => [],
-            'dictionary' => [],
+        $response = [
+            'status'        => false,
+            'message'       => $exception->getMessage(),
+            'data'          => [],
+            'dictionary'    => [],
             'notifications' => [
-                'count_new' => 0,
+                'count_new'   => 0,
                 'count_total' => 0
             ],
-            'pagination' => [
+            'pagination'    => [
                 'total_records' => 1,
-                'max_page' => 1,
-                'cur_page' => 1,
-                'per_page' => 1,
+                'max_page'      => 1,
+                'cur_page'      => 1,
+                'per_page'      => 1,
             ],
-        ], $code);
+        ];
+        if (config('app.debug')) {
+            $response['trace'] = array_slice($exception->getTrace(), 0, 1);
+        }
+        // Ключ `'trace'` добавляется в массив ответа только в том случае, если `config('app.debug')` возвращает `true`.
+        // Это позволяет избежать включения трассировки стека в ответ, когда приложение находится в режиме продакшн.
+        return response()->json($response, $code);
     }
 
     /**
      * Создать ответ с ошибкой.
      *
      * @param string $message
-     * @param array $errors
-     * @param int $status
+     * @param array  $errors
+     * @param int    $status
+     *
      * @return JsonResponse
      */
     private function makeErrorResponse(string $message, array $errors = [], int $status = 500): JsonResponse
     {
         return response()->json([
-            'status' => false,
-            'message' => $message,
-            'errors' => $errors,
-            'data' => [],
-            'dictionary' => [],
+            'status'        => false,
+            'message'       => $message,
+            'errors'        => $errors,
+            'data'          => [],
+            'dictionary'    => [],
             'notifications' => [
-                'count_new' => 0,
+                'count_new'   => 0,
                 'count_total' => 0
             ],
-            'pagination' => [
+            'pagination'    => [
                 'total_records' => 1,
-                'max_page' => 1,
-                'cur_page' => 1,
-                'per_page' => 1,
+                'max_page'      => 1,
+                'cur_page'      => 1,
+                'per_page'      => 1,
             ],
         ], $status);
     }

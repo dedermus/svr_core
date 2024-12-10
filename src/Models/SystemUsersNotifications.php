@@ -2,6 +2,7 @@
 
 namespace Svr\Core\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -122,6 +123,54 @@ class SystemUsersNotifications extends Model
     }
 
     /**
+     * Обновить дату просмотра уведомления
+     * @param $notification_id
+     *
+     * @return void
+     */
+    public function notificationDateViewUpdate($notification_id): void
+    {
+        $module = $this->find($notification_id);
+        if ($module) {
+            $module->update([
+                'notification_date_view' => now()
+            ]);
+        }
+    }
+
+    /**
+     * Получить список уведомлений по USER_ID  с пагинацией
+     * @param $user_id         - пользователь USER_ID
+     * @param $per_page        - текущая страница
+     * @param $cur_page        - максимальное количество записей на странице
+     * @param $order_field     - поле сортировки, строка, 50 символов
+     * @param $order_direction - направление сортировки, desc/asc
+     *
+     * @return array
+     */
+    public function notificationListUserIdPage($user_id, $per_page, $cur_page, $order_field, $order_direction): array
+    {
+//        dd(SystemUsersNotifications::where('user_id', $user_id)
+//            ->orderBy($order_field, $order_direction)
+//            ->take($per_page)
+//            ->skip($cur_page)->toSql());
+        return [
+//            'results' => SystemUsersNotifications::where('user_id', $user_id)
+//                ->orderBy($order_field, $order_direction)
+//                ->limit($cur_page-1)
+//                ->paginate($per_page),
+            'results' => SystemUsersNotifications::where('user_id', $user_id)
+                ->orderBy($order_field, $order_direction)
+                ->take($per_page) // limit
+                ->skip(($cur_page-1)*$per_page) // offset
+                ->get(),
+
+            'total' =>SystemUsersNotifications::where('user_id', $user_id)
+        ->count()
+        ];
+    }
+
+    /**
      * Получить правила валидации
      *
      * @param Request $request
@@ -132,10 +181,8 @@ class SystemUsersNotifications extends Model
     {
         $systemUser = new SystemUsers();
         return [
-            $this->primaryKey => [
-                $request->isMethod('put') ? 'required' : '',
-                Rule::exists('.' . $this->getTable(), $this->primaryKey),
-            ],
+            $this->primaryKey =>
+                $request->isMethod('put') ? 'required|exists:.'.$this->getTable().','.$this->primaryKey : 'numeric|min_digits:1|max_digits:9',
             'user_id' => 'required|exists:.' . $systemUser->getTable() . ','
                 . $systemUser->getPrimaryKey(),
             'author_id' => 'nullable|exists:.' . $systemUser->getTable() . ','
@@ -178,7 +225,7 @@ class SystemUsersNotifications extends Model
     private function getValidationMessages(): array
     {
         return [
-            $this->primaryKey => trans('svr-core-lang::validation.required'),
+            $this->primaryKey => trans('svr-core-lang::validation'),
             'user_id' => trans('svr-core-lang::validation'),
             'author_id' => trans('svr-core-lang::validation'),
             'notification_type' => trans('svr-core-lang::validation'),

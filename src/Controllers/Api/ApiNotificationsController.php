@@ -6,111 +6,186 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Svr\Core\Enums\SystemStatusDeleteEnum;
-use Svr\Core\Enums\SystemStatusEnum;
+use Illuminate\Validation\Rule;
 use Svr\Core\Exceptions\CustomException;
-use Svr\Core\Models\SystemRoles;
-use Svr\Core\Models\SystemSetting;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersNotifications;
-use Svr\Core\Models\SystemUsersRoles;
-use Svr\Core\Models\SystemUsersToken;
-use Svr\Core\Resources\AuthDataResource;
-use Svr\Core\Resources\AuthHerriotRequisitesDataResource;
-use Svr\Core\Resources\AuthInfoSystemUsersDataResource;
-use Svr\Core\Resources\AuthInfoSystemUsersDictionaryResource;
-use Svr\Core\Resources\AuthSetSystemUsersDataResource;
-use Svr\Core\Resources\SvrApiAuthInfoResource;
+use Svr\Core\Resources\NotificationsDataResource;
 use Svr\Core\Resources\SvrApiResponseResource;
-use Svr\Data\Models\DataCompaniesLocations;
-use Svr\Data\Models\DataUsersParticipations;
-use Svr\Directories\Models\DirectoryCountriesRegion;
-use Svr\Directories\Models\DirectoryCountriesRegionsDistrict;
 
 class ApiNotificationsController extends Controller
 {
+    protected SystemUsersNotifications $systemUsersNotifications;
+    protected SystemUsers $systemUsers;
+    protected int $cur_page = 1;
+    protected int $per_page = 1;
+    protected int $total_records = 1;
+    protected int $max_page = 1;
+
+
+
+    public function __construct(SystemUsersNotifications $systemUsersNotifications, SystemUsers $systemUsers)
+    {
+        $this->systemUsersNotifications = $systemUsersNotifications;
+        $this->systemUsers = $systemUsers;
+    }
+
     /**
-     * Получение информации о пользователе.
+     * Получение информации об уведомлении пользователя по NOTIFICATION_ID.
      *
      * @param Request $request HTTP запрос с токеном авторизации.
+     * @param int $notification_id Идентификатор уведомления.
      *
-     * @return SvrApiResponseResource|JsonResponse Возвращает ресурс с данными пользователя или JSON ответ с ошибкой.
+     * @return SvrApiResponseResource|JsonResponse
      * @throws CustomException
      */
-    public function notificationsData(Request $request, $notification_id): SvrApiResponseResource|JsonResponse
+    public function notificationsData(Request $request, int $notification_id): SvrApiResponseResource|JsonResponse
     {
         $request->merge(['notification_id' => $notification_id]);
         $this->validateNotificationRequest($request, ['notification_id']);
 
-        $notification = SystemUsersNotifications::find($request->notification_id);
+        $notification = $this->systemUsersNotifications->find($notification_id);
 
-        if (!$notification) {
-            throw new CustomException('Пользователь не найден', 404);
+        if ($notification) {
+            $this->updateNotificationDateView($notification_id);
+            $notification['notification_date_view'] = now();
+        } else {
+            throw new CustomException('Уведомление не найдено', 404);
         }
-        $user = $this->getUser($notification->user_id);
-        $data = $this->prepareUserData($user);
 
+        $user = $this->systemUsers->getUser(optional($notification)->user_id);
+        $data = $this->prepareResponseData($notification, $user);
 
         return new SvrApiResponseResource($data);
     }
 
     /**
+     * Получение списка уведомлений пользователя.
+     *
+     * @param Request $request HTTP запрос с токеном авторизации.
+     *
+     * @return SvrApiResponseResource|JsonResponse
+     */
+    public function notificationsList(Request $request): SvrApiResponseResource|JsonResponse
+    {
+        $user = auth()->user();
+        $request->merge(['user_id' => optional($user)->user_id]);
+        $this->validateNotificationListRequest($request, ['cur_page', 'per_page', 'order_field', 'order_direction']);
+        $this->per_page = (isset($request->per_page)) ? $request->per_page : $this->per_page;
+        $this->cur_page = (isset($request->cur_page)) ? $request->cur_page : $this->cur_page;
+        $order_field = (isset($request->order_field)) ? $request->order_field : 'notification_id';
+        $order_direction = (isset($request->order_direction)) ? $request->order_direction : 'desc';
+        $notifications = $this->getUserNotificationsPage(optional($user)->user_id, $this->per_page, $this->cur_page, $order_field, $order_direction);
+        $this->total_records =$notifications['total'];
+        $data = $this->prepareResponseData($notifications, $user);
+
+        return new SvrApiResponseResource($data);
+    }
+
+    /**
+     * Валидация запроса на получение списка уведомлений пользователя.
+     *
+     * @param Request $request HTTP запрос с данными уведомления.
+     * @param array $filterKeys Ключи для фильтрации данных запроса.
+     *
+     * @return void
+     */
+    private function validateNotificationListRequest(Request $request, array $filterKeys): void
+    {
+        $rules = [
+            'cur_page' => 'nullable|numeric|min_digits:1|max_digits:9',
+            'per_page' => 'nullable|numeric|min_digits:1|max_digits:9',
+            'order_field' => [
+                'nullable',
+                Rule::in([
+                    'notification_id',
+                    'user_id',
+                    'author_id',
+                    'notification_type',
+                    'notification_title',
+                    'notification_text',
+                    'notification_date_add',
+                    'notification_date_view'
+                ])
+            ],
+            'order_direction' => [
+                'nullable',
+                Rule::in(['asc','desc']),
+            ],
+        ];
+        $messages = $this->systemUsersNotifications->getFilterValidationMessages($filterKeys);
+
+        $messages = array_merge($messages, [
+            'cur_page' => trans('svr-core-lang::validation'),
+            'per_page' => trans('svr-core-lang::validation'),
+            'order_field' => trans('svr-core-lang::validation'),
+            'order_direction' => trans('svr-core-lang::validation'),
+        ]);
+        $request->validate($rules, $messages);
+    }
+
+    /**
      * Валидация запроса по уведомлению.
      *
-     * @param Request $request    HTTP запрос с данными уведомления.
-     * @param array   $filterKeys Ключи для фильтрации данных запроса.
+     * @param Request $request HTTP запрос с данными уведомления.
+     * @param array $filterKeys Ключи для фильтрации данных запроса.
      *
      * @return void
      */
     private function validateNotificationRequest(Request $request, array $filterKeys): void
     {
-        $model = new SystemUsersNotifications();
-        $rules = $model->getFilterValidationRules($request, $filterKeys);
-        $rules['notification_id'][0] = 'required';
-        $messages = $model->getFilterValidationMessages($filterKeys);
+        $rules = $this->systemUsersNotifications->getFilterValidationRules($request, $filterKeys);
+        $messages = $this->systemUsersNotifications->getFilterValidationMessages($filterKeys);
         $request->validate($rules, $messages);
     }
 
     /**
-     * Получить пользователя по ID.
+     * Обновить дату просмотра уведомления.
      *
-     * @param int $userId Идентификатор пользователя.
-     *
-     * @return SystemUsers|null Возвращает объект пользователя или null, если пользователь не найден.
+     * @param int $notification_id
+     * @return void
      */
-    private function getUser(int $userId): ?SystemUsers
+    private function updateNotificationDateView(int $notification_id): void
     {
-        return SystemUsers::where([
-            ['user_id', '=', $userId],
-            ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
-        ])->first();
+        $this->systemUsersNotifications->notificationDateViewUpdate($notification_id);
     }
 
     /**
-     * Подготовить данные пользователя для ресурса.
+     * Получить коллекцию уведомлений пользователя c пагинацией.
      *
-     * @param SystemUsers $user Объект пользователя.
+     * @param $user_id          - пользователь USER_ID
+     * @param $per_page         - текущая страница
+     * @param $cur_page         - максимальное количество записей на странице
+     * @param $order_field      - поле сортировки, строка, 50 символов
+     * @param $order_direction  - направление сортировки, desc/asc
      *
-     * @return Collection Возвращает коллекцию с данными пользователя.
+     * @return array
      */
-    private function prepareUserData(SystemUsers $user): Collection
+    private function getUserNotificationsPage($user_id, $per_page, $cur_page, $order_field, $order_direction): array
+    {
+        return $this->systemUsersNotifications->notificationListUserIdPage($user_id, $per_page, $cur_page, $order_field, $order_direction);
+    }
+
+    /**
+     * Подготовить данные для ответа.
+     *
+     * @param $notification
+     * @param $user
+     * @return Collection
+     */
+    private function prepareResponseData($notification, $user): Collection
     {
         return collect([
-            'user_id' => $user->user_id,
+            'user_id' => optional($user)->user_id,
+            'notification' => $notification['results'],
             'status' => true,
-            'data' => [
-                '4545' => '34534'
-            ],
-            'message' => 'Реквизиты установлены',
-            'response_resource_data' => AuthHerriotRequisitesDataResource::class,
+            'message' => '',
+            'response_resource_data' => NotificationsDataResource::class,
             'response_resource_dictionary' => false,
             'pagination' => [
-                'total_records' => 1,
-                'max_page' => 1,
-                'cur_page' => 1,
-                'per_page' => 1
+                'total_records' => $this->total_records,
+                'cur_page' => ($this->total_records == 0) ? $this->total_records : $this->cur_page,
+                'per_page' => ($this->total_records == 0) ? $this->total_records : $this->per_page,
             ],
         ]);
     }

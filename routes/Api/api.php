@@ -43,6 +43,8 @@ Route::prefix(config('svr.api_prefix'))->group(function () {
 Route::prefix(config('svr.api_prefix'))->group(function () {
     // получить информацию о пользователе
     Route::get('notifications/data/{notifications_id}', [ApiNotificationsController::class, 'notificationsData'])->middleware(['auth:svr_api', 'api']);
+    // получить список уведомлений
+    Route::get('notifications/list/', [ApiNotificationsController::class, 'notificationsList'])->middleware(['auth:svr_api', 'api']);
 });
 
 
