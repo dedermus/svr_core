@@ -2,77 +2,81 @@
 
 namespace Svr\Core\Exceptions;
 
-use Exception;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Container\Container;
 use Illuminate\Foundation\Configuration\Exceptions;
-use OpenAdminCore\Admin\Admin;
+use Illuminate\Http\Response;
 use Symfony\Component\Mailer\Exception\InvalidArgumentException;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Exceptions\InvalidSignatureException;
 use Illuminate\Routing\ResponseFactory;
-use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
 class ExceptionHandler
 {
-    public function __invoke(Exceptions $exceptions)
+    public function __invoke(Exceptions $exceptions): void
     {
         $exceptions->render(function (Throwable $e, Request $request) {
             /** @var ResponseFactory $response */
             $response = Container::getInstance()->make(ResponseFactory::class);
 
-            /**
-             * определение кастомного Exceptions для api
-             */
+            // Определение кастомного Exceptions для API
             if ($request->is(config('svr.api_prefix') . '/*')) {
-                if ($e instanceof NotFoundHttpException) {
-                    return $response->make(
-                        content: [
-                            'status'  => 'error',
-                            'message' => $e->getMessage(),
-                            'data' =>[]
-                        ],
-                        status: $e->getStatusCode(),
-                    );
+                $statusCode = $this->getStatusCode($e);
+                if ($statusCode !== null) {
+                    return $this->makeErrorResponse($response, $e->getMessage(), $statusCode);
                 }
-                if ($e instanceof MethodNotAllowedHttpException) {
-                    return $response->make(
-                        content: [
-                            'status'  => 'error',
-                            'message' => $e->getMessage(),
-                            'data' =>[]
-                        ],
-                        status: $e->getStatusCode(),
-                    );
-                }
-                // Кастомный вывод ошибок приложения при невалидном токене
-                if ($e instanceof AuthenticationException) {
-                    return $response->make(
-                        content: [
-                            'status'  => 'error',
-                            'message' => $e->getMessage(),
-                            'data' =>[]
-                        ],
-                        status: 401,
-                    );
-                }
-                if ($e instanceof InvalidArgumentException) {
-                    return $response->make(
-                        content: [
-                            'status'  => 'error',
-                            'message' => $e->getMessage(),
-                            'data' =>[]
-                        ],
-                        status: 400,
-                    );
-                }
-
 
                 return false;
             }
         });
+    }
+
+    /**
+     * Получить код состояния для исключения.
+     *
+     * @param Throwable $e
+     * @return int|null
+     */
+    private function getStatusCode(Throwable $e): ?int
+    {
+        return match (true) {
+            $e instanceof NotFoundHttpException, $e instanceof MethodNotAllowedHttpException => $e->getStatusCode(),
+            $e instanceof AuthenticationException => 401,
+            $e instanceof InvalidArgumentException => 400,
+            default => null,
+        };
+    }
+
+    /**
+     * Создать ответ с ошибкой.
+     *
+     * @param ResponseFactory $response
+     * @param string $message
+     * @param int $status
+     * @return Response
+     */
+    private function makeErrorResponse(ResponseFactory $response, string $message, int $status): Response
+    {
+        return $response->make(
+            content: [
+                'status' => false,
+                'message' => $message,
+                'data' => [],
+                'dictionary' => [],
+                'notifications' => [
+                    'count_new' => 0,
+                    'count_total' => 0
+                ],
+                'pagination' => [
+                    'total_records' => 1,
+                    'max_page' => 1,
+                    'cur_page' => 1,
+                    'per_page' => 1,
+                ],
+            ],
+            status: $status,
+        );
     }
 }

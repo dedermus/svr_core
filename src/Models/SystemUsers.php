@@ -390,6 +390,21 @@ class SystemUsers extends Authenticatable
     }
 
     /**
+     * Получить пользователя по ID.
+     *
+     * @param int $userId Идентификатор пользователя.
+     *
+     * @return SystemUsers|null Возвращает объект пользователя или null, если пользователь не найден.
+     */
+    public static function getUser(int $userId): ?SystemUsers
+    {
+        return SystemUsers::where([
+            ['user_id', '=', $userId],
+            ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
+        ])->first();
+    }
+
+    /**
      * Получить правила валидации
      * @param Request $request
      * @return array
