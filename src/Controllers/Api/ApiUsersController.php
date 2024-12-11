@@ -8,6 +8,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
+use Svr\Core\Exceptions\CustomException;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersRoles;
 use Svr\Core\Models\SystemUsersToken;
@@ -68,9 +69,11 @@ class ApiUsersController extends Controller
 
     /**
      * Удаление аватара у пользователя
+     *
      * @param Request $request
      *
      * @return SvrApiResponseResource|Collection Возвращает ресурс с данными пользователя или коллекцию с сообщением об ошибке.
+     * @throws CustomException
      */
     public function userAvatarDelete(Request $request): SvrApiResponseResource|Collection
     {
@@ -79,7 +82,7 @@ class ApiUsersController extends Controller
         $user = $this->getUser($request->user_id);
 
         if (!$user) {
-            return $this->createResponse(false, 'Пользователь не найден');
+            throw new CustomException('Пользователь не найден', 404);
         }
 
         $user->deleteAvatar($request);
@@ -116,6 +119,7 @@ class ApiUsersController extends Controller
      * @param Request $request HTTP запрос, содержащий ID пользователя и данные аватара.
      *
      * @return SvrApiResponseResource|Collection Возвращает ресурс с данными пользователя или коллекцию с сообщением об ошибке.
+     * @throws CustomException
      */
     public function userAvatarAdd(Request $request): SvrApiResponseResource|Collection
     {
@@ -124,7 +128,7 @@ class ApiUsersController extends Controller
         $user = $this->getUser($request->user_id);
 
         if (!$user) {
-            return $this->createResponse(false, 'Пользователь не найден');
+            throw new CustomException('Пользователь не найден', 404);
         }
 
         SystemUsers::where('user_id', $user->user_id)
@@ -162,6 +166,7 @@ class ApiUsersController extends Controller
      * @param Request $request HTTP запрос с данными для изменения пароля.
      *
      * @return Collection Возвращает коллекцию с сообщением об успешном изменении пароля или ошибке.
+     * @throws CustomException
      */
     public function userPasswordChange(Request $request): Collection
     {
@@ -170,15 +175,15 @@ class ApiUsersController extends Controller
         $user = $this->getUser($request->user_id);
 
         if (!$user) {
-            return $this->createResponse(false, 'Пользователь не найден');
+            throw new CustomException('Пользователь не найден', 404);
         }
 
         if ($request->password !== $request->password_confirmation) {
-            return $this->createResponse(false, 'Пароли не совпадают');
+            throw new CustomException('Пароли не совпадают', 401);
         }
 
         if (!Hash::check($request->current_password, $user->user_password)) {
-            return $this->createResponse(false, 'Не верный текущий пароль');
+            throw new CustomException('Не верный текущий пароль', 401);
         }
 
         $user->update(['user_password' => Hash::make($request->password)]);
@@ -189,8 +194,10 @@ class ApiUsersController extends Controller
      * Получить информацию о пользователе.
      *
      * @param Request $request HTTP запрос с ID пользователя.
+     * @param         $user_id - ID пользователя
      *
      * @return SvrApiResponseResource|JsonResponse Возвращает ресурс с данными пользователя или JSON ответ с ошибкой.
+     * @throws CustomException
      */
     public function usersData(Request $request, $user_id): SvrApiResponseResource|JsonResponse
     {
@@ -200,7 +207,7 @@ class ApiUsersController extends Controller
         $user = $this->getUser($request->user_id);
 
         if (!$user) {
-            return response()->json(['message' => 'Пользователь не найден'], 404);
+            throw new CustomException('Пользователь не найден', 404);
         }
 
         $data = $this->prepareUserData($user);

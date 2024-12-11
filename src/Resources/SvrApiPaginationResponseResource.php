@@ -18,13 +18,33 @@ class SvrApiPaginationResponseResource extends JsonResource
      */
     public function toArray(Request|Collection $request): array
     {
-        $this->resource['per_page'] = $this->resource['per_page'] == 0 ? 1: $this->resource['per_page'];
+        $this->resource['per_page'] = $this->resource['per_page'] == 0 ? 0 : $this->resource['per_page'];
         return [
             'total_records' => $this->resource['total_records'],
             'per_page' => $this->resource['per_page'],
             'cur_page' => $this->resource['cur_page'],
-            'max_page' => ceil($this->resource['total_records']/ $this->resource['per_page']),
+            'max_page' => $this->frac($this->resource['total_records'], $this->resource['per_page']),
         ];
 
+    }
+
+    /**
+     * Делит первый аргумент на второй.
+     * Если второй аргумент равен нулю, то возвращает ноль.
+     *
+     * @param $dividend
+     * @param $divider
+     * @return float|int
+     */
+    private function frac($dividend, $divider) {
+        if (!$divider) {
+            return 0;
+        }
+
+        if ((float)$divider == 0) {
+            return 0;
+        }
+
+        return $dividend / $divider;
     }
 }

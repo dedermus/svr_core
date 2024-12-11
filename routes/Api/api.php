@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Svr\Core\Controllers\Api\ApiAuthController;
+use Svr\Core\Controllers\Api\ApiNotificationsController;
 use Svr\Core\Controllers\Api\ApiUsersController;
 
 /*
@@ -38,6 +39,12 @@ Route::prefix(config('svr.api_prefix'))->group(function () {
     Route::post('users/avatar_delete', [ApiUsersController::class, 'userAvatarDelete'])->middleware(['auth:svr_api', 'api']);
     // добавить реквизиты Хорриота пользователю
     Route::post('users/herriot_req_add', [ApiUsersController::class, 'userHerriotReqAdd'])->middleware(['auth:svr_api', 'api']);
+});
+Route::prefix(config('svr.api_prefix'))->group(function () {
+    // получить информацию о пользователе
+    Route::get('notifications/data/{notifications_id}', [ApiNotificationsController::class, 'notificationsData'])->middleware(['auth:svr_api', 'api']);
+    // получить список уведомлений
+    Route::get('notifications/list/', [ApiNotificationsController::class, 'notificationsList'])->middleware(['auth:svr_api', 'api']);
 });
 
 
