@@ -19,9 +19,9 @@ class SvrApiPaginationResponseResource extends JsonResource
     public function toArray(Request|Collection $request): array
     {
         return [
-            'total_records' => Config::get('total_records'),
-            'per_page'      => Config::get('per_page'),
-            'cur_page'      => Config::get('cur_page'),
+            'total_records' => Config::get('total_records', env('total_records')),
+            'per_page'      => Config::get('per_page', env('per_page')),
+            'cur_page'      => Config::get('cur_page', env('cur_page')),
             'max_page'      => ceil($this->frac(Config::get('total_records'), Config::get('per_page'))),
         ];
     }
