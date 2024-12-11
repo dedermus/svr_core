@@ -5,6 +5,7 @@ namespace Svr\Core\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Models\SystemModulesActions;
 use Svr\Core\Models\SystemRoles;
@@ -107,10 +108,12 @@ class CheckUserPermissions
     private function setAuthUserData(Request $request, string $token, int $participationId, array $userParticipationInfo): void
     {
         $authUserData = Auth::user();
-        $authUserData['pagination_per_page'] = $request->input('pagination_per_page', 100);
-        $authUserData['pagination_cur_page'] = $request->input('pagination_cur_page', 1);
-        $authUserData['order_field'] = $request->input('order_field', false);
-        $authUserData['order_direction'] = $request->input('order_direction', 'asc');
+        Config::set('per_page', $request->input('per_page', env('per_page')));
+        Config::set('cur_page', $request->input('cur_page', env('cur_page')));
+        Config::set('max_page', env('max_page'));
+        Config::set('total_records', 0);
+        Config::set('order_field', $request->input('order_field', null));
+        Config::set('order_direction', $request->input('order_direction', env('order_direction')));
         $authUserData['token'] = $token;
         $authUserData['participation_id'] = $participationId;
         $authUserData['user_participation_info'] = $userParticipationInfo;

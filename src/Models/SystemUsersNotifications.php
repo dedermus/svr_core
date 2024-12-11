@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemNotificationsTypesEnum;
 use Svr\Core\Extensions\System\SystemFilter;
@@ -172,10 +173,10 @@ class SystemUsersNotifications extends Model
             ->orderBy($order_field, $order_direction);
 
         $results = $query->paginate($per_page, ['*'], 'page', $cur_page);
-
+        Config::set('total_records', $results->total());
         return [
             'results' => $results->items(),
-            'total' => $results->total(),
+            'total' => Config::get('total_records'),
             'current_page' => $results->currentPage(),
             'last_page' => $results->lastPage(),
         ];
@@ -185,14 +186,17 @@ class SystemUsersNotifications extends Model
     {
         if($notification_message_data === false)
         {
+            var_export(1);
             return false;
         }
         if($user_data === false)
         {
+            var_export(2);
             return false;
         }
         if($notification_message_data['message_status_front'] == 'enabled' && !empty($notification_message_data['message_text_front']))
         {
+            var_export(3);
             $insert_data = [
                 'user_id'							=> $user_data['user_id'],
                 'notification_type'					=> $notification_message_data['notification_type']
@@ -202,12 +206,15 @@ class SystemUsersNotifications extends Model
             {
                 $insert_data['author_id']			= $author_id;
             }
-
+var_export(4);
             $insert_data['notification_title']		= SystemFilter::replace_action($notification_message_data['message_title_front'], $notification_data);
+            var_export(5);
             $insert_data['notification_text']		= SystemFilter::replace_action($notification_message_data['message_text_front'], $notification_data);
-            $this->userNotificationsCreate(new Request($insert_data));
+            //$this->userNotificationsCreate(new Request($insert_data));
             //$this->insert(DB_MAIN, SCHEMA_SYSTEM . '.' . TBL_USERS_NOTIFICATIONS, $insert_data);
+
         }
+        var_export(6);
     }
 
     /**
