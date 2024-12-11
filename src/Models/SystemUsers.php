@@ -4,6 +4,7 @@ namespace Svr\Core\Models;
 
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Svr\Core\Enums\SystemParticipationsTypesEnum;
 use Svr\Core\Enums\SystemSexEnum;
 use Svr\Core\Enums\SystemStatusConfirmEnum;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
 use Svr\Core\Traits\GetValidationRules;
+use Svr\Data\Models\DataUsersParticipations;
 use Zebra_Image;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -143,7 +145,7 @@ class SystemUsers extends Authenticatable
     }
 
     /**
-     * Получить путь до папки с аватарами пользователя
+     * Получить путь до папки с аватарками пользователя
      * @return string
      */
     public function getPathAvatar(): string
@@ -275,8 +277,8 @@ class SystemUsers extends Authenticatable
             $fileNameToStore = $this->getPathAvatar() . $filenamebild;
             $request->file('user_avatar')->storeAs($fileNameToStore);
 
-            $image_name_big = str_replace('.' . $extention, '_big.jpg', $filenamebild);
-            $image_name_small = str_replace('.' . $extention, '_small.jpg', $filenamebild);
+            $image_name_big = str_replace('.' . $extention, '_big.'.$this->getAvatarExp(), $filenamebild);
+            $image_name_small = str_replace('.' . $extention, '_small.'.$this->getAvatarExp(), $filenamebild);
 
             $this->image_resize($filenamebild, $image_name_big, $this->getPathAvatar(), 800, 800);
             $this->image_resize($filenamebild, $image_name_small, $this->getPathAvatar(), 200, 200);
@@ -402,6 +404,49 @@ class SystemUsers extends Authenticatable
             ['user_id', '=', $userId],
             ['user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value],
         ])->first();
+    }
+
+    /**
+     * Получить пользователей по их ID  в виде массива
+     * @param array $userListId
+     *
+     * @return array Возвращает массив пользователей или null, если ни один пользователь не найден.
+     */
+    public static function getListUser(array $userListId): array
+    {
+        $data = null;
+        $result = SystemUsers::query()
+            ->where('user_status_delete', '=', SystemStatusDeleteEnum::ACTIVE->value)
+            ->whereIn('user_id', $userListId)
+            ->get()->toArray();
+
+        if (!is_null($result)) {
+            $data = [];
+            foreach ($result as $item) {
+                $data[$item['user_id']] = $item;
+                $data[$item['user_id']]['user_companies_count'] = self::getUserCompaniesCount($item['user_id']);
+                $avatars = (new SystemUsers)->getCurrentUserAvatar($item['user_id']);
+                $data[$item['user_id']]['user_avatar_small'] = $avatars['user_avatar_small'];
+                $data[$item['user_id']]['user_avatar_big'] = $avatars['user_avatar_big'];
+                unset($data[$item['user_id']]['user_avatar']);
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * @param $user_id - ID пользователя
+     *
+     * @return int
+     */
+    public static function getUserCompaniesCount($user_id): int
+    {
+        return DataUsersParticipations::query()
+            ->where([
+                ['user_id', $user_id],
+                ['participation_item_type', SystemParticipationsTypesEnum::COMPANY->value]
+            ])
+            ->count();
     }
 
     /**
