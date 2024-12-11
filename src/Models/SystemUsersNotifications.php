@@ -2,14 +2,16 @@
 
 namespace Svr\Core\Models;
 
-use Illuminate\Database\Eloquent\Collection;
+use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemNotificationsTypesEnum;
+use Svr\Core\Extensions\System\SystemFilter;
 use Svr\Core\Traits\GetTableName;
 use Svr\Core\Traits\GetValidationRules;
+use Telegram\Bot\Laravel\Facades\Telegram;
 
 /**
  * Модель Setting
@@ -124,6 +126,7 @@ class SystemUsersNotifications extends Model
 
     /**
      * Обновить дату просмотра уведомления
+     *
      * @param $notification_id
      *
      * @return void
@@ -139,35 +142,140 @@ class SystemUsersNotifications extends Model
     }
 
     /**
-     * Получить список уведомлений по USER_ID  с пагинацией
-     * @param $user_id         - пользователь USER_ID
-     * @param $per_page        - текущая страница
-     * @param $cur_page        - максимальное количество записей на странице
-     * @param $order_field     - поле сортировки, строка, 50 символов
-     * @param $order_direction - направление сортировки, desc/asc
+     * Обновить дату просмотра всех уведомлений пользователя по его USER_ID
+     * @param $user_id - пользователь USER_ID
+     *
+     * @return mixed
+     */
+    public function notificationReadAll($user_id): mixed
+    {
+        return SystemUsersNotifications::where('user_id', $user_id)
+            ->update([
+                'notification_date_view' => now()
+            ]);
+    }
+
+    /**
+     * Получить список уведомлений по USER_ID с пагинацией.
+     *
+     * @param int $user_id Пользователь USER_ID.
+     * @param int $per_page Количество записей на странице.
+     * @param int $cur_page Текущая страница.
+     * @param string $order_field Поле сортировки, строка, 50 символов.
+     * @param string $order_direction Направление сортировки, desc/asc.
      *
      * @return array
      */
-    public function notificationListUserIdPage($user_id, $per_page, $cur_page, $order_field, $order_direction): array
+    public function getUserNotificationsPage(int $user_id, int $per_page, int $cur_page, string $order_field, string $order_direction): array
     {
-//        dd(SystemUsersNotifications::where('user_id', $user_id)
-//            ->orderBy($order_field, $order_direction)
-//            ->take($per_page)
-//            ->skip($cur_page)->toSql());
-        return [
-//            'results' => SystemUsersNotifications::where('user_id', $user_id)
-//                ->orderBy($order_field, $order_direction)
-//                ->limit($cur_page-1)
-//                ->paginate($per_page),
-            'results' => SystemUsersNotifications::where('user_id', $user_id)
-                ->orderBy($order_field, $order_direction)
-                ->take($per_page) // limit
-                ->skip(($cur_page-1)*$per_page) // offset
-                ->get(),
+        $query = SystemUsersNotifications::where('user_id', $user_id)
+            ->orderBy($order_field, $order_direction);
 
-            'total' =>SystemUsersNotifications::where('user_id', $user_id)
-        ->count()
+        $results = $query->paginate($per_page, ['*'], 'page', $cur_page);
+
+        return [
+            'results' => $results->items(),
+            'total' => $results->total(),
+            'current_page' => $results->currentPage(),
+            'last_page' => $results->lastPage(),
         ];
+    }
+
+    public function notifications_send_user($user_data, $notification_message_data, $notification_data = false, $author_id = false)
+    {
+        if($notification_message_data === false)
+        {
+            return false;
+        }
+        if($user_data === false)
+        {
+            return false;
+        }
+        if($notification_message_data['message_status_front'] == 'enabled' && !empty($notification_message_data['message_text_front']))
+        {
+            $insert_data = [
+                'user_id'							=> $user_data['user_id'],
+                'notification_type'					=> $notification_message_data['notification_type']
+            ];
+
+            if($author_id !== false)
+            {
+                $insert_data['author_id']			= $author_id;
+            }
+
+            $insert_data['notification_title']		= SystemFilter::replace_action($notification_message_data['message_title_front'], $notification_data);
+            $insert_data['notification_text']		= SystemFilter::replace_action($notification_message_data['message_text_front'], $notification_data);
+            $this->userNotificationsCreate(new Request($insert_data));
+            //$this->insert(DB_MAIN, SCHEMA_SYSTEM . '.' . TBL_USERS_NOTIFICATIONS, $insert_data);
+        }
+    }
+
+    /**
+     * Подготовить список чатов Telegram для отправки сообщений
+     * @param $message_text
+     *
+     * @return void
+     */
+    public function notificationsSendAdmin($message_text): void
+    {
+        $admin_list = SystemSetting::query()
+            ->where('owner_type', 'telegram_informer_users')
+            ->where('setting_code', 'user_id')
+            ->pluck('setting_value'); // Предполагается, что идентификаторы хранятся в поле 'setting_value'
+
+        $environment = env('ENVIRONMENT');
+
+        $admin_list->each(function ($user_id) use ($message_text, $environment) {
+            $this->notificationsSendTelegram($user_id, "{$environment}: {$message_text}");
+        });
+    }
+
+    /**
+     * Отправить уведомление в чат Telegram
+     * @param $user_id          - пользователь (чат ID)
+     * @param $message_text     - сообщение
+     *
+     * @return void
+     */
+    private function notificationsSendTelegram($user_id, $message_text): void
+    {
+        try {
+            Telegram::sendMessage([
+                'chat_id' => $user_id,
+                'text' => $message_text,
+            ]);
+        }
+        catch (Exception $e){
+            // TODO - возможно тут надо куда то вывести информацию о том, что сообщение в телегу не доставлено
+        }
+    }
+
+    /**
+     * Получить данные по уведомлению
+     * @param int $notification_id - номер уведомления
+     *
+     * @return object|null
+     */
+    public function notificationData(int $notification_id): ?object
+    {
+        return SystemUsersNotifications::query()
+            ->select('system_users_notifications.*', 'system_users.*')
+            ->leftJoin('system_users', 'system_users.user_id', '=', 'system_users_notifications.user_id')
+            ->where('system_users_notifications.notification_id', $notification_id)
+            ->first();
+    }
+
+    /**
+     * Получить уведомление по типу
+     * @param $notification_type
+     *
+     * @return SystemUsersNotifications|null
+     */
+    public function getNotificationMessageType($notification_type): ?SystemUsersNotifications
+    {
+        return SystemUsersNotifications::query()
+            ->where('notification_type', $notification_type)
+            ->first();
     }
 
     /**
@@ -181,19 +289,20 @@ class SystemUsersNotifications extends Model
     {
         $systemUser = new SystemUsers();
         return [
-            $this->primaryKey =>
-                $request->isMethod('put') ? 'required|exists:.'.$this->getTable().','.$this->primaryKey : 'numeric|min_digits:1|max_digits:9',
-            'user_id' => 'required|exists:.' . $systemUser->getTable() . ','
+            $this->primaryKey        =>
+                $request->isMethod('put') ? 'required|exists:.' . $this->getTable() . ',' . $this->primaryKey
+                    : 'numeric|min_digits:1|max_digits:9',
+            'user_id'                => 'required|exists:.' . $systemUser->getTable() . ','
                 . $systemUser->getPrimaryKey(),
-            'author_id' => 'nullable|exists:.' . $systemUser->getTable() . ','
+            'author_id'              => 'nullable|exists:.' . $systemUser->getTable() . ','
                 . $systemUser->getPrimaryKey(),
-            'notification_type' => [
+            'notification_type'      => [
                 'required',
                 Rule::enum(SystemNotificationsTypesEnum::class)
             ],
-            'notification_title' => 'required|string|max:55',
-            'notification_text' => 'required|string',
-            'notification_date_add' => 'required|date_format:"Y-m-d H:i:s"',
+            'notification_title'     => 'required|string|max:55',
+            'notification_text'      => 'required|string',
+            'notification_date_add'  => 'required|date_format:"Y-m-d H:i:s"',
             'notification_date_view' => 'nullable|date_format:"Y-m-d H:i:s"',
         ];
     }
@@ -207,13 +316,13 @@ class SystemUsersNotifications extends Model
      */
     public function getNotificationsCountByUserId(int $user_id): array
     {
-        return ["count_new" => $this::where([
+        return ["count_new" => SystemUsersNotifications::where([
                 ['user_id', '=', $user_id],
                 ['notification_date_view', '=', null]
             ])->count() ?? 0,
-            "count_old" => $this::where([
-                    ['user_id', '=', $user_id],
-                ])->count() ?? 0
+                "count_old" => SystemUsersNotifications::where([
+                        ['user_id', '=', $user_id],
+                    ])->count() ?? 0
         ];
     }
 
@@ -225,13 +334,13 @@ class SystemUsersNotifications extends Model
     private function getValidationMessages(): array
     {
         return [
-            $this->primaryKey => trans('svr-core-lang::validation'),
-            'user_id' => trans('svr-core-lang::validation'),
-            'author_id' => trans('svr-core-lang::validation'),
-            'notification_type' => trans('svr-core-lang::validation'),
-            'notification_title' => trans('svr-core-lang::validation'),
-            'notification_text' => trans('svr-core-lang::validation'),
-            'notification_date_add' => trans('svr-core-lang::validation'),
+            $this->primaryKey        => trans('svr-core-lang::validation'),
+            'user_id'                => trans('svr-core-lang::validation'),
+            'author_id'              => trans('svr-core-lang::validation'),
+            'notification_type'      => trans('svr-core-lang::validation'),
+            'notification_title'     => trans('svr-core-lang::validation'),
+            'notification_text'      => trans('svr-core-lang::validation'),
+            'notification_date_add'  => trans('svr-core-lang::validation'),
             'notification_date_view' => trans('svr-core-lang::validation'),
         ];
     }

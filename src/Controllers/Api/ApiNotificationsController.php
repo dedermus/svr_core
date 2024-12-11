@@ -17,12 +17,12 @@ class ApiNotificationsController extends Controller
 {
     protected SystemUsersNotifications $systemUsersNotifications;
     protected SystemUsers $systemUsers;
-    protected int $cur_page = 1;
-    protected int $per_page = 1;
-    protected int $total_records = 1;
-    protected int $max_page = 1;
-
-
+    protected int $cur_page = 1;                        // текущая страница
+    protected int $per_page = 100;                      // максимальное количество записей на странице
+    protected int $total_records = 0;                   // всего записей
+    protected int $max_page = 1;                        // максимальное число страниц
+    protected string $order_field = 'notification_id';  // поле для сортировки
+    protected string $order_direction = 'desc';         // направление сортировки
 
     public function __construct(SystemUsersNotifications $systemUsersNotifications, SystemUsers $systemUsers)
     {
@@ -45,16 +45,33 @@ class ApiNotificationsController extends Controller
         $this->validateNotificationRequest($request, ['notification_id']);
 
         $notification = $this->systemUsersNotifications->find($notification_id);
-
-        if ($notification) {
-            $this->updateNotificationDateView($notification_id);
-            $notification['notification_date_view'] = now();
-        } else {
+        $this->per_page = (isset($request->per_page)) ? $request->per_page : $this->per_page;
+        $this->cur_page = (isset($request->cur_page)) ? $request->cur_page : $this->cur_page;
+        if (!$notification) {
             throw new CustomException('Уведомление не найдено', 404);
         }
 
         $user = $this->systemUsers->getUser(optional($notification)->user_id);
+        $notifications_page = $this->getUserNotificationsPage(optional($user)->user_id, $this->per_page, $this->cur_page, $this->order_field, $this->order_direction);
+        $this->total_records = $notifications_page['total'];
+        $this->updateNotificationDateView($notification_id);
         $data = $this->prepareResponseData($notification, $user);
+        $notification_message_data = [
+            'message_id' => 12,
+            'notification_type' => 'integration_selex_guid_good',
+            'message_description' => 'Отправка GUID в СЕЛЕКС - УСПЕХ',
+            'message_title_front' => 'Передача уникального номера из СВР в СЕЛЭКС',
+            'message_title_email' => NULL,
+            'message_text_front' => 'Передача уникальных номеров из СВР в ИАС «СЕЛЭКС» завершена. Передано {{animals_count_total}} записе…',
+            'message_text_email' => NULL,
+            'message_status_front' => 'enabled',
+            'message_status_email' => 'disabled',
+            'message_status' => 'enabled',
+            'created_at' => '2024-11-18 13:00:16',
+            'updated_at' => '2024-11-18 13:00:16',
+        ];
+
+        $this->systemUsersNotifications->notifications_send_user($user, $notification_message_data);
 
         return new SvrApiResponseResource($data);
     }
@@ -73,11 +90,36 @@ class ApiNotificationsController extends Controller
         $this->validateNotificationListRequest($request, ['cur_page', 'per_page', 'order_field', 'order_direction']);
         $this->per_page = (isset($request->per_page)) ? $request->per_page : $this->per_page;
         $this->cur_page = (isset($request->cur_page)) ? $request->cur_page : $this->cur_page;
-        $order_field = (isset($request->order_field)) ? $request->order_field : 'notification_id';
-        $order_direction = (isset($request->order_direction)) ? $request->order_direction : 'desc';
-        $notifications = $this->getUserNotificationsPage(optional($user)->user_id, $this->per_page, $this->cur_page, $order_field, $order_direction);
+        $this->order_field = (isset($request->order_field)) ? $request->order_field : $this->order_field;
+        $this->order_direction = (isset($request->order_direction)) ? $request->order_direction : $this->order_direction;
+        $notifications = $this->getUserNotificationsPage(optional($user)->user_id, $this->per_page, $this->cur_page, $this->order_field, $this->order_direction);
         $this->total_records =$notifications['total'];
         $data = $this->prepareResponseData($notifications, $user);
+
+        return new SvrApiResponseResource($data);
+    }
+
+    /**
+     * Пометить все уведомления пользователя как прочитанные.
+     *
+     * @param Request $request HTTP запрос с токеном авторизации.
+     *
+     * @return SvrApiResponseResource|JsonResponse
+     */
+    public function notificationsReadAll(Request $request): SvrApiResponseResource|JsonResponse
+    {
+        $user = auth()->user();
+        $request->merge(['user_id' => optional($user)->user_id]);
+        $this->systemUsersNotifications->notificationReadAll(optional($user)->user_id);
+        $this->per_page = (isset($request->per_page)) ? $request->per_page : $this->per_page;
+        $this->cur_page = (isset($request->cur_page)) ? $request->cur_page : $this->cur_page;
+        $this->order_field = (isset($request->order_field)) ? $request->order_field : $this->order_field;
+        $this->order_direction = (isset($request->order_direction)) ? $request->order_direction : $this->order_direction;
+        $notifications = $this->getUserNotificationsPage(optional($user)->user_id, $this->per_page, $this->cur_page, $this->order_field, $this->order_direction);
+        $notifications['results'] = null;
+        $this->total_records =$notifications['total'];
+        $data = $this->prepareResponseData($notifications, $user);
+        $data['message'] = 'Уведомления прочитаны';
 
         return new SvrApiResponseResource($data);
     }
@@ -163,7 +205,7 @@ class ApiNotificationsController extends Controller
      */
     private function getUserNotificationsPage($user_id, $per_page, $cur_page, $order_field, $order_direction): array
     {
-        return $this->systemUsersNotifications->notificationListUserIdPage($user_id, $per_page, $cur_page, $order_field, $order_direction);
+        return $this->systemUsersNotifications->getUserNotificationsPage($user_id, $per_page, $cur_page, $order_field, $order_direction);
     }
 
     /**
@@ -177,7 +219,7 @@ class ApiNotificationsController extends Controller
     {
         return collect([
             'user_id' => optional($user)->user_id,
-            'notification' => $notification['results'],
+            'notification' => (isset($notification['results'])) ? $notification['results'] : $notification,
             'status' => true,
             'message' => '',
             'response_resource_data' => NotificationsDataResource::class,
