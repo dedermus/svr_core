@@ -48,10 +48,10 @@ class ApiNotificationsController extends Controller
         $this->updateNotificationDateView($notification_id);
         $data = $this->prepareResponseData($notification, $user);
 
-$per_page = 3;
-$cur_page = 2;
+$per_page = 2000;
+$cur_page = 1;
 
-        $this->systemUsers->users_list($per_page, $cur_page, true, [], '');
+        $this->systemUsers->users_list($per_page, $cur_page, true, [], 'Борисович');
 
         return new SvrApiResponseResource($data);
     }

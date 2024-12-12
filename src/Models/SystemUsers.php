@@ -2,6 +2,7 @@
 
 namespace Svr\Core\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -338,7 +339,7 @@ class SystemUsers extends Authenticatable
     }
 
     /**
-     * Пользователь принадлежит ко многим ролям.
+     * Отношение Пользователь принадлежит ко многим ролям.
      *
      * @return BelongsToMany
      */
@@ -351,6 +352,16 @@ class SystemUsers extends Authenticatable
             'role_slug',
             'user_id',
             'role_slug');
+    }
+
+    /**
+     * Отношение `participations`, которое связывает пользователя с его участиями.
+     *
+     * @return HasMany
+     */
+    public function participations(): HasMany
+    {
+        return $this->hasMany(DataUsersParticipations::class, 'user_id', 'user_id');
     }
 
     /**
@@ -457,17 +468,19 @@ class SystemUsers extends Authenticatable
 
     /**
      * Список пользователей
-     * @param $count_per_page
-     * @param $page_number
+     * @param $per_page
+     * @param $cur_page
      * @param bool $only_enabled
      * @param array $filters_list
      * @param string $search_string
      * @return array
      */
-    public function users_list($count_per_page, $page_number, $only_enabled = true, $filters_list = [], $search_string = '')
+    public function users_list($per_page, $cur_page, $only_enabled = true, $filters_list = [], $search_string = '')
     {
-        $where_view		= " user_status_delete = 'active' ";
-        $params_data	= explode(' ', $search_string, -1);
+        $where_view		= "";
+        //$searchTerms = explode(' ', mb_strtolower($search_string)); // Приводим поисковый запрос к нижнему и разбиваем строку на массив слов
+        $searchTerms = explode(' ', $search_string); // Разбиваем строку на массив слов
+        $params_data = explode(' ', $search_string); // Разбиваем строку на массив слов
         // список колонок, участвующих в поиске и сортировке
         $columns_list	= [
             'user_id' 			=> 	[
@@ -495,13 +508,13 @@ class SystemUsers extends Authenticatable
                 'order_field'	=> false
             ],
             'user_full_name'	    =>  [
-                'column_name' 	=> ['CONCAT(u.user_first, \' \', u.user_middle, \' \', u.user_last)'],
+                'column_name' 	=> ["CONCAT(u.user_first, ' ', u.user_middle, ' ', u.user_last)"],
                 'to_lower'		=> true,
                 'section'		=> 'where',
-                'order_field'	=>  'CONCAT(user_last, \' \', user_middle, \' \', user_first)',
+                'order_field'	=>  "CONCAT(user_last, ' ', user_middle, ' ', user_first)",
             ],
             'user_date_created'	=>  [
-                'column_name' 	=> ['to_char(u.user_date_created, \'DD.MM.YYYY\')'],
+                'column_name' 	=> ["to_char(u.user_date_created, 'DD.MM.YYYY')"],
                 'to_lower'		=> false,
                 'section'		=> 'where',
                 'order_field'	=> false
@@ -557,6 +570,106 @@ class SystemUsers extends Authenticatable
             ],
         ];
 
+        $users = SystemUsers::withCount(['participations as user_companies_count' => function ($query) {
+            $query->where('participation_item_type', 'company');
+        }])
+            ->addSelect(
+                'system_users.*',
+                DB::raw("CONCAT(user_first, ' ', user_middle, ' ', user_last) AS user_full_name"),
+                "up.participation_id",
+                "up.participation_item_id",
+                "up.participation_status",
+                "c.company_id",
+                "c.company_name_short",
+                "c.company_name_full",
+                "c.company_status",
+                "c.company_base_index",
+                "cl.company_location_id",
+                "company_r.region_name AS company_region_name",
+                "company_r.region_id AS company_region_id",
+                "company_rd.district_name AS company_district_name",
+                "company_rd.district_id AS company_district_id",
+                "district_r.region_name AS district_region_name",
+                "district_r.region_id AS district_region_id",
+                "district_rd.district_name AS district_district_name",
+                "district_rd.district_id AS district_district_id",
+                "region_r.region_name AS region_region_name",
+                "region_r.region_id AS region_region_id",
+                "r.role_id",
+                "r.role_name_long",
+                "r.role_name_short",
+                "r.role_slug",
+                "r.role_status"
+            )
+            ->leftJoin(DataUsersParticipations::getTableName().' AS up', 'up.user_id', '=', 'system_users.user_id')
+            ->leftJoin(DataCompaniesLocations::getTableName() . ' AS cl', function ($join) {
+                $join->on('cl.company_location_id', '=', 'up.participation_item_id')
+                    ->where('up.participation_item_type', '=', SystemParticipationsTypesEnum::COMPANY->value);
+            })
+            ->leftJoin(DataCompanies::getTableName().' AS c', 'c.company_id', '=', 'cl.company_id')
+            ->leftJoin(DirectoryCountriesRegion::getTableName().' AS company_r', 'company_r.region_id', '=', 'cl.region_id')
+            ->leftJoin(DirectoryCountriesRegionsDistrict::getTableName().' AS company_rd', 'company_rd.district_id', '=', 'cl.district_id')
+            ->leftJoin(DirectoryCountriesRegionsDistrict::getTableName() . ' AS district_rd', function ($join) {
+                $join->on('district_rd.district_id', '=', 'up.participation_item_id')
+                    ->where('up.participation_item_type', '=', SystemParticipationsTypesEnum::DISTRICT->value);
+            })
+            ->leftJoin(DirectoryCountriesRegion::getTableName().' AS district_r', 'district_r.region_id', '=', 'district_rd.region_id')
+            ->leftJoin(DirectoryCountriesRegion::getTableName() . ' AS region_r', function ($join) {
+                $join->on('region_r.region_id', '=', 'up.participation_item_id')
+                    ->where('up.participation_item_type', '=', SystemParticipationsTypesEnum::REGION->value);
+            })
+            ->leftJoin(SystemUsersRoles::getTableName().' AS ur', 'ur.user_id', '=', 'system_users.user_id')
+            ->leftJoin(SystemRoles::getTableName().' AS r', 'r.role_slug', '=', 'ur.role_slug')
+            ->where('user_status_delete', SystemStatusDeleteEnum::ACTIVE->value)
+            ->where('user_status', SystemStatusEnum::ENABLED->value)
+            ->where(function ($query) use ($searchTerms) {
+                foreach ($searchTerms as $term) {
+                    $query->orWhere(function ($subQuery) use ($term) {
+                        $subQuery
+                            ->where('user_first', 'ILIKE', "%{$term}%")
+                            ->orWhere('system_users.user_id', 'ILIKE', "%{$term}%")
+                            ->orWhere('system_users.user_first', 'ILIKE', "%{$term}%")
+                            ->orWhere('system_users.user_middle', 'ILIKE', "%{$term}%")
+                            ->orWhere('system_users.user_last', 'ILIKE', "%{$term}%")
+                            ->orWhere(DB::raw("CONCAT(system_users.user_first, ' ', system_users.user_middle, ' ', system_users.user_last)"), 'ILIKE', "%{$term}%")
+                            ->orWhere(DB::raw("to_char(system_users.user_date_created, 'DD.MM.YYYY')"), 'ILIKE', "%{$term}%")
+                            ->orWhere(DB::raw("to_char(system_users.user_date_block, 'DD.MM.YYYY')"), 'ILIKE', "%{$term}%")
+                            ->orWhere('system_users.user_status', 'ILIKE', "%{$term}%")
+                            ->orWhere('system_users.user_email', 'ILIKE', "%{$term}%")
+                            ->orWhere('c.company_name_short', 'ILIKE', "%{$term}%")
+                            ->orWhere('c.company_name_full', 'ILIKE', "%{$term}%")
+                            ->orWhere('r.role_name_short', 'ILIKE', "%{$term}%")
+                            ->orWhere('r.role_name_long', 'ILIKE', "%{$term}%")
+                            ->orWhere('company_rd.district_name', 'ILIKE', "%{$term}%")
+                            ->orWhere('district_rd.district_name', 'ILIKE', "%{$term}%")
+                            ->orWhere('company_r.region_name', 'ILIKE', "%{$term}%")
+                            ->orWhere('district_r.region_name', 'ILIKE', "%{$term}%")
+                            ->orWhere('region_r.region_name', 'ILIKE', "%{$term}%")
+                            ->orWhere('c.company_base_index', 'ILIKE', "%{$term}%");
+                    });
+                }
+            })
+            ->orderBy('system_users.user_id')
+            ->orderBy('user_full_name')
+            ->orderBy('district_district_name')
+            ->orderBy('region_region_name')
+            ->distinct('system_users.user_id');
+
+        $results = $users->paginate($per_page, ['*'], 'page', $cur_page);
+        Config::set('total_records', $results->total());
+        // если есть список
+        if (Config::get('total_records') > 0) {
+            foreach ($results as $result) {
+                // добавим пути к аватаркам
+                $avatars = (new SystemUsers)->getCurrentUserAvatar($result['user_id']);
+                $result['user_avatar_small'] = $avatars['user_avatar_small'];
+                $result['user_avatar_big'] = $avatars['user_avatar_big'];
+                unset($result['user_avatar']);
+            }
+        }
+        dd($results->toArray());
+
+
         foreach($params_data as $param)
         {
 
@@ -574,9 +687,9 @@ class SystemUsers extends Authenticatable
                     {
                         if ($column['to_lower'] === true)
                         {
-                            $sub_data[$column['section']][]	= 'lower('.$item.') ILIKE \'%'.mb_strtolower($param).'%\'';
+                            $sub_data[$column['section']][]	= 'lower('.$item.') ILIKE \'%'.($param).'%\'';
                         }else {
-                            $sub_data[$column['section']][]	= $item.' ILIKE \'%'.mb_strtolower($param).'%\'';
+                            $sub_data[$column['section']][]	= $item.' ILIKE \'%'.($param).'%\'';
                         }
                     }
                 }
@@ -586,7 +699,11 @@ class SystemUsers extends Authenticatable
             $where_view .= ')';
         }
 
-        $query_first = 'SELECT
+
+
+
+
+        $query_first = 'SELECT DISTINCT ON(u.user_id)
                             u.*,
                             CONCAT(u.user_first, \' \', u.user_middle, \' \', u.user_last) AS user_full_name,
     						up.participation_id,
@@ -625,12 +742,9 @@ class SystemUsers extends Authenticatable
 							LEFT JOIN '.DirectoryCountriesRegion::getTableName().' AS region_r ON region_r.region_id = up.participation_item_id	AND up.participation_item_type = \'region\'
 							LEFT JOIN '.SystemUsersRoles::getTableName().' AS ur ON ur.user_id = u.user_id
 							LEFT JOIN ' . SystemRoles::getTableName() . ' AS r ON r.role_slug = ur.role_slug
-						WHERE '.$where_view;
+						WHERE 1=1 '.$where_view;
 
-        if (isset($sub_data) && count($sub_data['having']) > 0)
-        {
-            $query_first .= ' HAVING ' . implode(' AND ', $sub_data['having']);
-        }
+
 
         $where = ' and 1=1 ';
 
@@ -651,40 +765,9 @@ class SystemUsers extends Authenticatable
 
         //$query = 'SELECT * FROM (SELECT DISTINCT ON (user_id) * FROM '.$view_table_name.' '.$where.') AS temp '.$order_string. ' LIMIT :items_limit OFFSET :items_offset';
         $query = $query_first.' '.$where.' '. $order_string .' LIMIT :items_limit OFFSET :items_offset';
-        $rr = DB::select($query, [ 'items_limit' => (int)$count_per_page,
-                             'items_offset' => (int)$count_per_page * ((int)$page_number - 1)]);
-        $users = SystemUsers::with([
-            'participations' => function ($query) {
-                $query->select('user_id', 'participation_id', 'participation_item_id', 'participation_status');
-            },
-            'participations.companyLocation' => function ($query) {
-                $query->select('company_location_id', 'company_id', 'region_id', 'district_id');
-            },
-            'participations.companyLocation.company' => function ($query) {
-                $query->select('company_id', 'company_name_short', 'company_name_full', 'company_status', 'company_base_index');
-            },
-            'participations.companyLocation.region' => function ($query) {
-                $query->select('region_id', 'region_name');
-            },
-            'participations.companyLocation.district' => function ($query) {
-                $query->select('district_id', 'district_name');
-            },
-            'roles' => function ($query) {
-                $query->select('role_id', 'role_name_long', 'role_name_short', 'role_slug', 'role_status');
-            }
-        ])
-            ->where('user_status_delete', 'active')
-            ->where('user_status', 'enabled')
-            ->get()
-            ->map(function ($user) {
-                $user->user_full_name = "{$user->user_first} {$user->user_middle} {$user->user_last}";
-                $user->user_companies_count = DB::table('data_users_participations')
-                    ->where('user_id', $user->user_id)
-                    ->where('participation_item_type', 'company')
-                    ->count();
-                return $user;
-            });
-        dd($users);
+        $rr = DB::select($query, [ 'items_limit' => (int)$per_page,
+                             'items_offset' => (int)$per_page * ((int)$cur_page - 1)]);
+//dd($rr);
         $query1 = "SELECT
     u.*,
     CONCAT(u.user_first, ' ', u.user_middle, ' ', u.user_last) AS user_full_name,
@@ -736,8 +819,8 @@ LEFT JOIN system.system_roles AS r ON r.role_slug = ur.role_slug
 WHERE
     u.user_status_delete = 'active'
     AND u.user_status = 'enabled'  LIMIT :items_limit OFFSET :items_offset";
-        $rr = DB::select($query1, [ 'items_limit' => (int)$count_per_page,
-                             'items_offset' => (int)$count_per_page * ((int)$page_number - 1)]);
+        $rr = DB::select($query1, [ 'items_limit' => (int)$per_page,
+                             'items_offset' => (int)$per_page * ((int)$cur_page - 1)]);
 
 
         dd($rr);
