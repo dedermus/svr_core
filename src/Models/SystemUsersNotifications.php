@@ -174,12 +174,32 @@ class SystemUsersNotifications extends Model
 
         $results = $query->paginate($per_page, ['*'], 'page', $cur_page);
         Config::set('total_records', $results->total());
-        return [
-            'results' => $results->items(),
-            'total' => Config::get('total_records'),
-            'current_page' => $results->currentPage(),
-            'last_page' => $results->lastPage(),
-        ];
+        return  $results->items();
+    }
+
+    public function notificationCreate($notification_type, $company_id = false, $user_id = false, $notification_data = false)
+    {
+        $notification_message_data = $this->getNotificationMessageData($notification_type);
+
+        if($company_id)
+        {
+            $company_users_list		= (new module_Users)->users_list(9999, 1, true, ['company_id' => [$company_id]]);
+
+            if($company_users_list && count($company_users_list) > 0)
+            {
+                foreach($company_users_list as $item)
+                {
+                    $this->notification_send_user($item, $notification_message_data, $notification_data);
+                }
+            }
+        }
+
+        if($user_id)
+        {
+            $user_data	= $this->user_data($user_id);
+
+            $this->notification_send_user($user_data, $notification_message_data, $notification_data);
+        }
     }
 
     public function notifications_send_user($user_data, $notification_message_data, $notification_data = false, $author_id = false)
@@ -278,7 +298,7 @@ var_export(4);
      *
      * @return SystemUsersNotifications|null
      */
-    public function getNotificationMessageType($notification_type): ?SystemUsersNotifications
+    public function getNotificationMessageData($notification_type): ?SystemUsersNotifications
     {
         return SystemUsersNotifications::query()
             ->where('notification_type', $notification_type)

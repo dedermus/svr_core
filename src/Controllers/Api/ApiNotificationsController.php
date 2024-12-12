@@ -47,6 +47,12 @@ class ApiNotificationsController extends Controller
         $user = $this->systemUsers->getUser(optional($notification)->user_id);
         $this->updateNotificationDateView($notification_id);
         $data = $this->prepareResponseData($notification, $user);
+
+$per_page = 3;
+$cur_page = 2;
+
+        $this->systemUsers->users_list($per_page, $cur_page, true, [], '');
+
         return new SvrApiResponseResource($data);
     }
 
@@ -168,9 +174,7 @@ class ApiNotificationsController extends Controller
         $cur_page = Config::get('cur_page');
         $order_field = (!is_null(Config::get('order_field'))) ? Config::get('order_field') : $this->order_field;
         $order_direction = Config::get('order_direction');
-        $notifications = $this->systemUsersNotifications->getUserNotificationsPage($user_id, $per_page, $cur_page, $order_field, $order_direction);
-        Config::set('total_records', $notifications['total']);
-        return $notifications;
+        return $this->systemUsersNotifications->getUserNotificationsPage($user_id, $per_page, $cur_page, $order_field, $order_direction);
     }
 
     /**
