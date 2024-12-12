@@ -108,12 +108,12 @@ class CheckUserPermissions
     private function setAuthUserData(Request $request, string $token, int $participationId, array $userParticipationInfo): void
     {
         $authUserData = Auth::user();
-        Config::set('per_page', $request->input('per_page', env('per_page')));
-        Config::set('cur_page', $request->input('cur_page', env('cur_page')));
-        Config::set('max_page', env('max_page'));
+        Config::set('per_page', (int)$request->input('per_page', env('PER_PAGE')));
+        Config::set('cur_page', (int)$request->input('cur_page', env('CUR_PAGE')));
+        Config::set('max_page', (int)env('MAX_PAGE'));
         Config::set('total_records', 0);
         Config::set('order_field', $request->input('order_field', null));
-        Config::set('order_direction', $request->input('order_direction', env('order_direction')));
+        Config::set('order_direction', $request->input('order_direction', env('ORDER_DIRECTION')));
         $authUserData['token'] = $token;
         $authUserData['participation_id'] = $participationId;
         $authUserData['user_participation_info'] = $userParticipationInfo;
