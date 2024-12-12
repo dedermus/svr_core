@@ -63,12 +63,6 @@ class ApiAuthController extends Controller
             'message' => '',
             'response_resource_data' => SvrApiAuthInfoResource::class,
             'response_resource_dictionary' => false,
-            'pagination' => [
-                'total_records' => 1,
-                'max_page' => 1,
-                'cur_page' => 1,
-                'per_page' => 1
-            ],
         ]);
 
         return new SvrApiResponseResource($data);
@@ -225,12 +219,6 @@ class ApiAuthController extends Controller
             'message' => 'Реквизиты установлены',
             'response_resource_data' => AuthHerriotRequisitesDataResource::class,
             'response_resource_dictionary' => false,
-            'pagination' => [
-                'total_records' => 1,
-                'max_page' => 1,
-                'cur_page' => 1,
-                'per_page' => 1
-            ],
         ]);
 
         return new SvrApiResponseResource($data);
@@ -278,12 +266,6 @@ class ApiAuthController extends Controller
             'message' => '',
             'response_resource_data' => AuthInfoSystemUsersDataResource::class,
             'response_resource_dictionary' => AuthInfoSystemUsersDictionaryResource::class,
-            'pagination' => [
-                'total_records' => 1,
-                'max_page' => 1,
-                'cur_page' => 1,
-                'per_page' => 1
-            ],
         ]);
     }
 
@@ -336,12 +318,6 @@ class ApiAuthController extends Controller
             'message' => $responseMessage,
             'response_resource_data' => AuthSetSystemUsersDataResource::class,
             'response_resource_dictionary' => AuthInfoSystemUsersDictionaryResource::class,
-            'pagination' => [
-                'total_records' => 1,
-                'max_page' => 1,
-                'cur_page' => 1,
-                'per_page' => 1
-            ],
         ]);
     }
 
