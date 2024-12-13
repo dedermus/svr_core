@@ -7,7 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use OpenAdminCore\Admin\LogViewer\LogViewer;
+use OpenAdminCore\Admin\Reporter\ExceptionModel;
+use PHPMailer\PHPMailer\PHPMailer;
 use Svr\Core\Enums\SystemNotificationsTypesEnum;
 use Svr\Core\Extensions\System\SystemFilter;
 use Svr\Core\Traits\GetTableName;
@@ -177,15 +181,24 @@ class SystemUsersNotifications extends Model
         return  $results->items();
     }
 
-    public function notificationCreate($notification_type, $company_id = false, $user_id = false, $notification_data = false)
+    /**
+     * Создать уведомление для пользователя
+     * @param string      $notification_type
+     * @param false|int   $company_id
+     * @param false|int   $user_id
+     * @param false|array $notification_data
+     *
+     * @return void
+     */
+    public function notificationCreate(string $notification_type, false|int $company_id = false, false|int $user_id = false, false|array $notification_data = false): void
     {
-        $notification_message_data = $this->getNotificationMessageData($notification_type);
+        $notification_message_data = (new SystemUsersNotificationsMessages())->getNotificationMessageData($notification_type);
 
         if($company_id)
         {
-            $company_users_list		= (new module_Users)->users_list(9999, 1, true, ['company_id' => [$company_id]]);
+            $company_users_list		= (new SystemUsers())->users_list(999999, 1, true, ['company_id' => [$company_id]]);
 
-            if($company_users_list && count($company_users_list) > 0)
+            if(count($company_users_list) > 0)
             {
                 foreach($company_users_list as $item)
                 {
@@ -193,30 +206,27 @@ class SystemUsersNotifications extends Model
                 }
             }
         }
-
         if($user_id)
         {
-            $user_data	= $this->user_data($user_id);
+            $user_data	= SystemUsers::getUser($user_id);
 
             $this->notification_send_user($user_data, $notification_message_data, $notification_data);
         }
     }
 
-    public function notifications_send_user($user_data, $notification_message_data, $notification_data = false, $author_id = false)
+    public function notification_send_user($user_data, $notification_message_data, $notification_data = false, $author_id = false)
     {
         if($notification_message_data === false)
         {
-            var_export(1);
             return false;
         }
         if($user_data === false)
         {
-            var_export(2);
             return false;
         }
+
         if($notification_message_data['message_status_front'] == 'enabled' && !empty($notification_message_data['message_text_front']))
         {
-            var_export(3);
             $insert_data = [
                 'user_id'							=> $user_data['user_id'],
                 'notification_type'					=> $notification_message_data['notification_type']
@@ -226,15 +236,69 @@ class SystemUsersNotifications extends Model
             {
                 $insert_data['author_id']			= $author_id;
             }
-var_export(4);
             $insert_data['notification_title']		= SystemFilter::replace_action($notification_message_data['message_title_front'], $notification_data);
-            var_export(5);
             $insert_data['notification_text']		= SystemFilter::replace_action($notification_message_data['message_text_front'], $notification_data);
-            //$this->userNotificationsCreate(new Request($insert_data));
-            //$this->insert(DB_MAIN, SCHEMA_SYSTEM . '.' . TBL_USERS_NOTIFICATIONS, $insert_data);
-
+            $insert_data['notification_date_add'] = now()->format($this->dateFormat);
+            $this->userNotificationsCreate(new Request($insert_data));
         }
-        var_export(6);
+
+//        if($notification_message_data['message_status_email'] == 'enabled' && !empty($notification_message_data['message_text_email']))
+//        {
+//            if(empty($user_data['user_email']) || $user_data['user_email_status'] !== 'confirmed')
+//            {
+//                return false;
+//            }
+//            if (is_null($notification_message_data['message_title_email']) || is_null($notification_message_data['message_text_email']))
+//            {
+//                return false;
+//            }
+        $notification_message_data['message_title_email'] = 'sdfsdfsdf';
+        $notification_message_data['message_text_email'] = 'dddddddddddddddddddd';
+//            $settings_data = $this->settings_data('system_notifications', 0);
+//            $notification_data['email_support']		= $settings_data['email_support'];
+
+            // TODO НЕ ЗАБЫТЬ ПОМЕНЯТЬ АДРЕС НА НАСТОЯЩИЙ
+            //$mail_to								= 'ilja.filin2010@yandex.ru';//$user_data['user_email'];
+
+//            //$mail_to								= $user_data['user_email'];
+//            $mail_subject 							= SystemFilter::replace_action($notification_message_data['message_title_email'], $notification_data);
+//            $message_text 							= SystemFilter::replace_action($notification_message_data['message_text_email'], $notification_data);
+//            $message_html 							= SystemFilter::replace_action($notification_message_data['message_text_email'], $notification_data);
+//            $mail_settings 							= $this->settings_data('system_mail', 0);
+
+        $mail = new PHPMailer(true);
+
+        try {
+            /* Email SMTP Settings */
+            $mail->SMTPDebug = 0;
+            $mail->isSMTP();
+            $mail->Host = 'localhost';//env('MAIL_HOST');
+            $mail->SMTPAuth = true;
+            $mail->Username = env('MAIL_USERNAME');
+            $mail->Password = env('MAIL_PASSWORD');
+            $mail->SMTPSecure = env('MAIL_ENCRYPTION');
+            $mail->Port = env('MAIL_PORT');
+            $mail->setFrom(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+            $mail->addAddress('dedermus@gmail.com');
+            //$mail->addAddress($user_data['user_email']);
+            $mail->isHTML(true);
+            $mail->Subject = SystemFilter::replace_action($notification_message_data['message_title_email'], $notification_data);
+            $mail->Body    = SystemFilter::replace_action($notification_message_data['message_text_email'], $notification_data);
+            if( !$mail->send() ) {
+                Log::error('Письмо не отправлено.', (array)$mail->ErrorInfo);
+                return false;
+                //return back()->with("error", "Письмо не отправлено.")->withErrors($mail->ErrorInfo);
+            }
+//            else {
+//                return back()->with("success", "Электронное письмо отправлено.");
+//            }
+        } catch (Exception $e) {
+            Log::error('Письмо не может быть отправлено.');
+            return false;
+           // return back()->with('error','Сообщение не может быть отправлено.');
+        }
+//        }
+
     }
 
     /**
@@ -283,7 +347,7 @@ var_export(4);
      *
      * @return object|null
      */
-    public function notificationData(int $notification_id): ?object
+    public function getNotificationData(int $notification_id): ?object
     {
         return SystemUsersNotifications::query()
             ->select('system_users_notifications.*', 'system_users.*')
@@ -298,7 +362,7 @@ var_export(4);
      *
      * @return SystemUsersNotifications|null
      */
-    public function getNotificationMessageData($notification_type): ?SystemUsersNotifications
+    public function getNotificationTypeData($notification_type): ?SystemUsersNotifications
     {
         return SystemUsersNotifications::query()
             ->where('notification_type', $notification_type)

@@ -124,6 +124,20 @@ class SystemUsersNotificationsMessages extends Model
     }
 
     /**
+     * Получить уведомление по типу
+     *
+     * @param string $notification_type Тип уведомления
+     *
+     * @return array
+     */
+    public function getNotificationMessageData(string $notification_type): array
+    {
+        return SystemUsersNotificationsMessages::query()
+            ->where('notification_type', $notification_type)
+            ->first()->toArray();
+    }
+
+    /**
      * Получить правила валидации
      * @param Request $request
      * @return array

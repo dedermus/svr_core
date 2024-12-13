@@ -66,11 +66,11 @@ class SystemFilter
      * Замена переменных
      *
      * @param array|string $data Строка или массив, где заменяем
-     * @param string       $replace_data
+     * @param array       $replace_data
      *
-     * @return string
+     * @return array|string
      */
-	public static function replace_action(array|string $data, string $replace_data): string
+	public static function replace_action(array|string $data, array $replace_data): array|string
     {
 		if(is_array($data))
 		{

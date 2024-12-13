@@ -467,108 +467,19 @@ class SystemUsers extends Authenticatable
     }
 
     /**
-     * Список пользователей
-     * @param $per_page
-     * @param $cur_page
-     * @param bool $only_enabled
-     * @param array $filters_list
-     * @param string $search_string
+     * Получить пагинированный список пользователей с набором передаваемых параметров и поисковой строкой
+     *
+     * @param int    $per_page      Количество записей на странице.
+     * @param int    $cur_page      Текущая страница.
+     * @param bool   $only_enabled  Флаг выборки, учитывающий только не заблокированных и не удаленных пользователей
+     * @param array  $filters_list  Фильтр
+     * @param string $search_string Строка поиска
+     *
      * @return array
      */
-    public function users_list($per_page, $cur_page, $only_enabled = true, $filters_list = [], $search_string = '')
+    public function users_list(int $per_page, int $cur_page, bool $only_enabled = true, array $filters_list = [], string $search_string = ''): array
     {
-        $where_view		= "";
-        //$searchTerms = explode(' ', mb_strtolower($search_string)); // Приводим поисковый запрос к нижнему и разбиваем строку на массив слов
         $searchTerms = explode(' ', $search_string); // Разбиваем строку на массив слов
-        $params_data = explode(' ', $search_string); // Разбиваем строку на массив слов
-        // список колонок, участвующих в поиске и сортировке
-        $columns_list	= [
-            'user_id' 			=> 	[
-                'column_name' 	=> ['u.user_id::text'],
-                'to_lower'		=> false,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-            'user_first' 			=> 	[
-                'column_name' 	=> ['u.user_first'],
-                'to_lower'		=> true,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-            'user_middle'			=> 	[
-                'column_name' 	=> ['u.user_middle'],
-                'to_lower'		=> true,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-            'user_last'				=>	[
-                'column_name' 	=> ['u.user_last'],
-                'to_lower'		=> true,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-            'user_full_name'	    =>  [
-                'column_name' 	=> ["CONCAT(u.user_first, ' ', u.user_middle, ' ', u.user_last)"],
-                'to_lower'		=> true,
-                'section'		=> 'where',
-                'order_field'	=>  "CONCAT(user_last, ' ', user_middle, ' ', user_first)",
-            ],
-            'user_date_created'	=>  [
-                'column_name' 	=> ["to_char(u.user_date_created, 'DD.MM.YYYY')"],
-                'to_lower'		=> false,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-            'user_date_block'		=>	[
-                'column_name' 	=> ['to_char(u.user_date_block, \'DD.MM.YYYY\')'],
-                'to_lower'		=> false,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-            'user_companies_count'	=>  false,
-            'user_status'			=>	[
-                'column_name' 	=> ['u.user_status::text'],
-                'to_lower'		=> false,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-            'user_email'			=>	[
-                'column_name' 	=> ['u.user_email'],
-                'to_lower'		=> false,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-            'company_name_short'	=>  [
-                'column_name' 	=> ['c.company_name_short', 'c.company_name_full'],
-                'to_lower'		=> true,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-            'role_name_short'		=>	[
-                'column_name' 	=> ['r.role_name_short', 'r.role_name_long'],
-                'to_lower'		=> true,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-            'district_name'			=>	[
-                'column_name' 	=> ['company_rd.district_name', 'district_rd.district_name'],
-                'to_lower'		=> true,
-                'section'		=> 'where',
-                'order_field'	=> 'district_district_name',
-            ],
-            'region_name'			=>	[
-                'column_name' 	=> ['company_r.region_name', 'district_r.region_name', 'region_r.region_name'],
-                'to_lower'		=> true,
-                'section'		=> 'where',
-                'order_field'	=> 'region_region_name',
-            ],
-            'company_base_index'	=>	[
-                'column_name' 	=> ['c.company_base_index'],
-                'to_lower'		=> true,
-                'section'		=> 'where',
-                'order_field'	=> false
-            ],
-        ];
 
         $users = SystemUsers::withCount(['participations as user_companies_count' => function ($query) {
             $query->where('participation_item_type', 'company');
@@ -620,8 +531,6 @@ class SystemUsers extends Authenticatable
             })
             ->leftJoin(SystemUsersRoles::getTableName().' AS ur', 'ur.user_id', '=', 'system_users.user_id')
             ->leftJoin(SystemRoles::getTableName().' AS r', 'r.role_slug', '=', 'ur.role_slug')
-            ->where('user_status_delete', SystemStatusDeleteEnum::ACTIVE->value)
-            ->where('user_status', SystemStatusEnum::ENABLED->value)
             ->where(function ($query) use ($searchTerms) {
                 foreach ($searchTerms as $term) {
                     $query->orWhere(function ($subQuery) use ($term) {
@@ -649,7 +558,13 @@ class SystemUsers extends Authenticatable
                     });
                 }
             })
-            ->orderBy('system_users.user_id')
+            ->whereRaw(SystemUsers::createFilterSql($filters_list));
+        // Добавляем условия, если $only_enabled равно true
+        if ($only_enabled) {
+            $users->where('user_status_delete', SystemStatusDeleteEnum::ACTIVE->value)  // присутствует при $only_enabled = true
+            ->where('user_status', SystemStatusEnum::ENABLED->value);                   // присутствует при $only_enabled = true
+        }
+        $users->orderBy('system_users.user_id')
             ->orderBy('user_full_name')
             ->orderBy('district_district_name')
             ->orderBy('region_region_name')
@@ -667,234 +582,76 @@ class SystemUsers extends Authenticatable
                 unset($result['user_avatar']);
             }
         }
-        dd($results->toArray());
 
-
-        foreach($params_data as $param)
-        {
-
-            $where_view .= ' AND (';
-
-            $sub_data	= ['where' => [], 'having' => []];
-
-            foreach($columns_list as $column)
-            {
-                if ($column === false) continue;
-
-                foreach ($column['column_name'] as $item)
-                {
-                    if ($column['section'] === 'where')
-                    {
-                        if ($column['to_lower'] === true)
-                        {
-                            $sub_data[$column['section']][]	= 'lower('.$item.') ILIKE \'%'.($param).'%\'';
-                        }else {
-                            $sub_data[$column['section']][]	= $item.' ILIKE \'%'.($param).'%\'';
-                        }
-                    }
-                }
-            }
-
-            $where_view .= implode(' OR ', $sub_data['where']);
-            $where_view .= ')';
-        }
-
-
-
-
-
-        $query_first = 'SELECT DISTINCT ON(u.user_id)
-                            u.*,
-                            CONCAT(u.user_first, \' \', u.user_middle, \' \', u.user_last) AS user_full_name,
-    						up.participation_id,
-    						up.participation_item_id,
-    						up.participation_status,
-    						c.company_id,
-    						c.company_name_short,
-    						c.company_name_full,
-    						c.company_status,
-    						c.company_base_index,
-    						cl.company_location_id,
-    						company_r.region_name AS company_region_name,
-    						company_r.region_id AS company_region_id,
-							company_rd.district_name AS company_district_name,
-							company_rd.district_id AS company_district_id,
-							district_r.region_name AS district_region_name,
-							district_r.region_id AS district_region_id,
-							district_rd.district_name AS district_district_name,
-							district_rd.district_id AS district_district_id,
-							region_r.region_name AS region_region_name,
-							region_r.region_id AS region_region_id,
-    						r.role_id,
-    						r.role_name_long,
-    						r.role_name_short,
-    						r.role_slug,
-    						r.role_status,
-    						(SELECT COUNT(tmp_companies.participation_id) FROM ' .DataUsersParticipations::getTableName() . '  tmp_companies WHERE user_id = u.user_id AND participation_item_type = \'company\') AS user_companies_count
-                        FROM ' . SystemUsers::getTableName(). ' AS u
-                        	LEFT JOIN ' . DataUsersParticipations::getTableName(). ' AS up ON up.user_id = u.user_id
-							LEFT JOIN ' . DataCompaniesLocations::getTableName() . ' AS cl ON cl.company_location_id = up.participation_item_id AND up.participation_item_type = \'company\'
-							LEFT JOIN ' . DataCompanies::getTableName() . ' AS c ON c.company_id = cl.company_id
-							LEFT JOIN '.DirectoryCountriesRegion::getTableName().' AS company_r ON company_r.region_id = cl.region_id
-							LEFT JOIN '.DirectoryCountriesRegionsDistrict::getTableName().' AS company_rd ON company_rd.district_id = cl.district_id
-							LEFT JOIN '.DirectoryCountriesRegionsDistrict::getTableName().' AS district_rd ON district_rd.district_id = up.participation_item_id AND up.participation_item_type = \'district\'
-							LEFT JOIN '.DirectoryCountriesRegion::getTableName().' AS district_r ON district_r.region_id = district_rd.region_id
-							LEFT JOIN '.DirectoryCountriesRegion::getTableName().' AS region_r ON region_r.region_id = up.participation_item_id	AND up.participation_item_type = \'region\'
-							LEFT JOIN '.SystemUsersRoles::getTableName().' AS ur ON ur.user_id = u.user_id
-							LEFT JOIN ' . SystemRoles::getTableName() . ' AS r ON r.role_slug = ur.role_slug
-						WHERE 1=1 '.$where_view;
-
-
-
-        $where = ' and 1=1 ';
-
-        if(count($filters_list) > 0)
-        {
-            $where .= $this->create_filter_sql($filters_list);
-        }
-
-        if ($only_enabled) $where .= " AND user_status = 'enabled' ";
-
-        $order_string = '';
-        if (Config::get('order_field') !== false && array_key_exists(Config::get('order_field'), $columns_list))
-        {
-            $order_field = Config::get('order_field');
-            if ($columns_list[$order_field]['order_field'] !== false) $order_field = $columns_list[$order_field]['order_field'];
-            $order_string = ' ORDER BY '.$order_field.' '.Config::get('order_direction');
-        }
-
-        //$query = 'SELECT * FROM (SELECT DISTINCT ON (user_id) * FROM '.$view_table_name.' '.$where.') AS temp '.$order_string. ' LIMIT :items_limit OFFSET :items_offset';
-        $query = $query_first.' '.$where.' '. $order_string .' LIMIT :items_limit OFFSET :items_offset';
-        $rr = DB::select($query, [ 'items_limit' => (int)$per_page,
-                             'items_offset' => (int)$per_page * ((int)$cur_page - 1)]);
-//dd($rr);
-        $query1 = "SELECT
-    u.*,
-    CONCAT(u.user_first, ' ', u.user_middle, ' ', u.user_last) AS user_full_name,
-    up.participation_id,
-    up.participation_item_id,
-    up.participation_status,
-    c.company_id,
-    c.company_name_short,
-    c.company_name_full,
-    c.company_status,
-    c.company_base_index,
-    cl.company_location_id,
-    company_r.region_name AS company_region_name,
-    company_r.region_id AS company_region_id,
-    company_rd.district_name AS company_district_name,
-    company_rd.district_id AS company_district_id,
-    district_r.region_name AS district_region_name,
-    district_r.region_id AS district_region_id,
-    district_rd.district_name AS district_district_name,
-    district_rd.district_id AS district_district_id,
-    region_r.region_name AS region_region_name,
-    region_r.region_id AS region_region_id,
-    r.role_id,
-    r.role_name_long,
-    r.role_name_short,
-    r.role_slug,
-    r.role_status,
-    (
-        SELECT COUNT(tmp_companies.participation_id)
-        FROM data.data_users_participations AS tmp_companies
-        WHERE tmp_companies.user_id = u.user_id
-         AND tmp_companies.participation_item_type = 'company'
-    ) AS user_companies_count
-FROM
-    system.system_users AS u
-LEFT JOIN data.data_users_participations AS up ON up.user_id = u.user_id
-LEFT JOIN data.data_companies_locations AS cl ON cl.company_location_id = up.participation_item_id
-    AND up.participation_item_type = 'company'
-LEFT JOIN data.data_companies AS c ON c.company_id = cl.company_id
-LEFT JOIN directories.countries_regions AS company_r ON company_r.region_id = cl.region_id
-LEFT JOIN directories.countries_regions_districts AS company_rd ON company_rd.district_id = cl.district_id
-LEFT JOIN directories.countries_regions_districts AS district_rd ON district_rd.district_id = up.participation_item_id
-    AND up.participation_item_type = 'district'
-LEFT JOIN directories.countries_regions AS district_r ON district_r.region_id = district_rd.region_id
-LEFT JOIN directories.countries_regions AS region_r ON region_r.region_id = up.participation_item_id
-    AND up.participation_item_type = 'region'
-LEFT JOIN system.system_users_roles AS ur ON ur.user_id = u.user_id
-LEFT JOIN system.system_roles AS r ON r.role_slug = ur.role_slug
-WHERE
-    u.user_status_delete = 'active'
-    AND u.user_status = 'enabled'  LIMIT :items_limit OFFSET :items_offset";
-        $rr = DB::select($query1, [ 'items_limit' => (int)$per_page,
-                             'items_offset' => (int)$per_page * ((int)$cur_page - 1)]);
-
-
-        dd($rr);
-//        $users_list = $this->get_data(DB_MAIN, $query, [
-//            'items_limit' => (int)$count_per_page,
-//            'items_offset' => (int)$count_per_page * ((int)$page_number - 1)
-//        ], 'rows', 'user_id');
-//
-//        if ($users_list === false || count($users_list) < 1)
-//        {
-//            return false;
-//        }
-//
-//        $users_count_query = 'SELECT DISTINCT(user_id) FROM '.$view_table_name.$where;
-//        $users_count = $this->get_data(DB_MAIN, $users_count_query, null, 'rows');
-//
-//        $this->response_pagination(count($users_count));
-//
-//        $this->exec(DB_MAIN, 'DROP view IF EXISTS '.$view_table_name);
-//
-//        foreach($users_list as $key => $item)
-//        {
-//            if (method_exists('module_Users', 'user_data_extend'))
-//            {
-//                $user_data_extend = $this->user_data_extend($item);
-//
-//                $users_list[$key]['user_companies_locations_list'] = $user_data_extend['user_companies_locations_list'];
-//                $users_list[$key]['user_roles_list'] = $user_data_extend['user_roles_list'];
-//                $users_list[$key]['user_regions_list'] = $user_data_extend['user_regions_list'];
-//                $users_list[$key]['user_districts_list'] = $user_data_extend['user_districts_list'];
-//            }
-//        }
-
-        return $users_list;
+        return $results->toArray()['data'];
     }
 
-    private function create_filter_sql($filters_list)
+    /**
+     * Формирование фильтра для запроса
+     * @param array $filters_list
+     *
+     * @return string
+     */
+    private static function createFilterSql(array $filters_list): string
     {
-        if (isset($filters_list['date_block_from'])) $filters_list['date_block_from'] = date('Y-m-d', strtotime($filters_list['date_block_from']));
-        if (isset($filters_list['date_block_to'])) $filters_list['date_block_to'] = date('Y-m-d', strtotime($filters_list['date_block_to']));
-        if (isset($filters_list['date_registration_from'])) $filters_list['date_registration_from'] = date('Y-m-d', strtotime($filters_list['date_registration_from']));
-        if (isset($filters_list['date_registration_to'])) $filters_list['date_registration_to'] = date('Y-m-d', strtotime($filters_list['date_registration_to']));
-
-        $filters_mapping = [
-            'user_id' => " AND user_id = " . $filters_list['user_id'],
-            //			'user_first' => " AND lower(user_first) ILIKE '%" . (mb_strtolower($filters_list['user_first'])) . "%'",
-            //			'user_middle' => " AND lower(user_middle) ILIKE '%" . (mb_strtolower($filters_list['user_middle'])) . "%'",
-            //			'user_last' => " AND lower(user_last) ILIKE '%" . (mb_strtolower($filters_list['user_last'])) . "%'",
-            'user_full_name' => " AND lower(user_full_name) ILIKE '%" . (mb_strtolower($filters_list['user_full_name'])) . "%'",
-            //			'district_id' => ' AND (company_district_id IN (' . implode(',', $filters_list['district_id']) . ') OR district_district_id IN (' . implode(',', $filters_list['district_id']) . '))',
-            'district_id' => ' AND district_district_id IN (' . implode(',', $filters_list['district_id']) . ')',
-            'company_location_id' => ' AND company_location_id IN (' . implode(',', $filters_list['company_location_id']) . ')',
-            'company_id' => ' AND company_id IN (' . implode(',', $filters_list['company_id']) . ')',
-            'region_id' => ' AND region_region_id IN (' . implode(',', $filters_list['region_id']) . ')',
-            'user_date_block_min' => " AND user_date_block >= '" . $filters_list['user_date_block_min'] . "'",
-            'user_date_block_max' => " AND user_date_block <= '" . $filters_list['user_date_block_max'] . "'",
-            'user_date_register_min' => " AND user_date_created >= '" . $filters_list['user_date_register_min'] . "'",
-            'user_date_register_max' => " AND user_date_created <= '" . $filters_list['user_date_register_max'] . "'",
-            //			'nhoz' => " AND company_base_index IN ('" . implode("','", $filters_list['nhoz']) . "')",
-            'role_id' => ' AND role_id IN (' . implode(',', $filters_list['role_id']) . ')',
-            'user_status' => ' AND user_status = \'' . $filters_list['user_status']. '\'',
-        ];
-
-        $query = '';
-
-        foreach ($filters_list as $key => $value) {
-            if (empty($value)) {
-                continue;
-            }
-
-            $query .= $filters_mapping[$key];
+        if (isset($filters_list['user_date_block_min'])) {
+            $filters_list['user_date_block_min'] = date('Y-m-d', strtotime($filters_list['user_date_block_min']));
         }
-        return ($query);
+        if (isset($filters_list['user_date_block_max'])) {
+            $filters_list['user_date_block_max'] = date('Y-m-d', strtotime($filters_list['user_date_block_max']));
+        }
+        if (isset($filters_list['user_date_register_min'])) {
+            $filters_list['user_date_register_min'] = date('Y-m-d', strtotime($filters_list['user_date_register_min']));
+        }
+        if (isset($filters_list['user_date_register_max'])) {
+            $filters_list['user_date_register_max'] = date('Y-m-d', strtotime($filters_list['user_date_register_max']));
+        }
+
+        $filters_mapping = [];
+
+        if (isset($filters_list['user_id'])) {
+            $filters_mapping['user_id'] = "system_users.user_id = " . $filters_list['user_id'];
+        }
+        if (isset($filters_list['user_full_name'])) {
+            $filters_mapping['user_full_name'] = "lower(CONCAT(user_first, ' ', user_middle, ' ', user_last)) ILIKE '%" . $filters_list['user_full_name'] . "%'";
+        }
+        if (isset($filters_list['district_id'])) {
+            $filters_mapping['district_id'] = 'district_rd.district_id IN (' . implode(',', $filters_list['district_id']) . ')';
+        }
+        if (isset($filters_list['company_location_id'])) {
+            $filters_mapping['company_location_id'] = 'cl.company_location_id IN (' . implode(',', $filters_list['company_location_id']) . ')';
+        }
+        if (isset($filters_list['company_id'])) {
+            $filters_mapping['company_id'] = 'c.company_id IN (' . implode(',', $filters_list['company_id']) . ')';
+        }
+        if (isset($filters_list['region_id'])) {
+            $filters_mapping['region_id'] = 'region_r.region_id IN (' . implode(',', $filters_list['region_id']) . ')';
+        }
+        if (isset($filters_list['user_date_block_min'])) {
+            $filters_mapping['user_date_block_min'] = "system_users.user_date_block >= '" . $filters_list['user_date_block_min'] . "'";
+        }
+        if (isset($filters_list['user_date_block_max'])) {
+            $filters_mapping['user_date_block_max'] = "system_users.user_date_block <= '" . $filters_list['user_date_block_max'] . "'";
+        }
+        if (isset($filters_list['user_date_register_min'])) {
+            $filters_mapping['user_date_register_min'] = "system_users.user_date_created >= '" . $filters_list['user_date_register_min'] . "'";
+        }
+        if (isset($filters_list['user_date_register_max'])) {
+            $filters_mapping['user_date_register_max'] = "system_users.user_date_created <= '" . $filters_list['user_date_register_max'] . "'";
+        }
+        if (isset($filters_list['role_id'])) {
+            $filters_mapping['role_id'] = 'role_id IN (' . implode(',', $filters_list['role_id']) . ')';
+        }
+        if (isset($filters_list['user_status'])) {
+            $filters_mapping['user_status'] = 'system_users.user_status = \'' . $filters_list['user_status'] . '\'';
+        }
+        $filters_mapping['1'] = '1 = 1';
+
+        // Объединяем все условия в строку с использованием 'AND'
+        return implode(' AND ', $filters_mapping);
     }
+
+
 
     /**
      * Получить правила валидации
