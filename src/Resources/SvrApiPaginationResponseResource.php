@@ -23,7 +23,7 @@ class SvrApiPaginationResponseResource extends JsonResource
         return [
             'total_records' => Config::get('total_records', env('TOTAL_RECORDS')),
             'per_page'      => Config::get('per_page', env('PER_PAGE')),
-            'cur_page'      => ($cur_page > $max_page) ? $max_page : $cur_page,
+            'cur_page'      => $cur_page,
             'max_page'      => ceil($this->frac(Config::get('total_records'), Config::get('per_page'))),
         ];
     }

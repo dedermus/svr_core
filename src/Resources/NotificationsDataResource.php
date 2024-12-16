@@ -27,10 +27,9 @@ class NotificationsDataResource extends JsonResource
             $returned_data = $this->getData($notificationData);
         }
         if (isset($notificationData[0]['notification_id'])) {
-
             foreach ($notificationData as $notification)
             {
-                $returned_data[] = $this->getData($notification);
+                $returned_data[$notification['notification_id']] = $this->getData($notification);
             }
         }
         return $returned_data;

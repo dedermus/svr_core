@@ -13,6 +13,7 @@ use OpenAdminCore\Admin\LogViewer\LogViewer;
 use OpenAdminCore\Admin\Reporter\ExceptionModel;
 use PHPMailer\PHPMailer\PHPMailer;
 use Svr\Core\Enums\SystemNotificationsTypesEnum;
+use Svr\Core\Extensions\Email\SystemEmail;
 use Svr\Core\Extensions\System\SystemFilter;
 use Svr\Core\Traits\GetTableName;
 use Svr\Core\Traits\GetValidationRules;
@@ -214,7 +215,17 @@ class SystemUsersNotifications extends Model
         }
     }
 
-    public function notification_send_user($user_data, $notification_message_data, $notification_data = false, $author_id = false)
+    /**
+     * Создание уведомления для пользователя
+     *
+     * @param $user_data                 - массив данных по пользователю
+     * @param $notification_message_data - данные шаблона уведомления
+     * @param array|false $notification_data   - данные для подстановки в шаблон
+     * @param int|false $author_id           - автор уведомления
+     *
+     * @return false|void
+     */
+    public function notification_send_user($user_data, $notification_message_data, array|false $notification_data = false, int|false $author_id = false)
     {
         if($notification_message_data === false)
         {
@@ -242,63 +253,23 @@ class SystemUsersNotifications extends Model
             $this->userNotificationsCreate(new Request($insert_data));
         }
 
-//        if($notification_message_data['message_status_email'] == 'enabled' && !empty($notification_message_data['message_text_email']))
-//        {
-//            if(empty($user_data['user_email']) || $user_data['user_email_status'] !== 'confirmed')
-//            {
-//                return false;
-//            }
-//            if (is_null($notification_message_data['message_title_email']) || is_null($notification_message_data['message_text_email']))
-//            {
-//                return false;
-//            }
-        $notification_message_data['message_title_email'] = 'sdfsdfsdf';
-        $notification_message_data['message_text_email'] = 'dddddddddddddddddddd';
-//            $settings_data = $this->settings_data('system_notifications', 0);
-//            $notification_data['email_support']		= $settings_data['email_support'];
-
-            // TODO НЕ ЗАБЫТЬ ПОМЕНЯТЬ АДРЕС НА НАСТОЯЩИЙ
-            //$mail_to								= 'ilja.filin2010@yandex.ru';//$user_data['user_email'];
-
-//            //$mail_to								= $user_data['user_email'];
-//            $mail_subject 							= SystemFilter::replace_action($notification_message_data['message_title_email'], $notification_data);
-//            $message_text 							= SystemFilter::replace_action($notification_message_data['message_text_email'], $notification_data);
-//            $message_html 							= SystemFilter::replace_action($notification_message_data['message_text_email'], $notification_data);
-//            $mail_settings 							= $this->settings_data('system_mail', 0);
-
-        $mail = new PHPMailer(true);
-
-        try {
-            /* Email SMTP Settings */
-            $mail->SMTPDebug = 0;
-            $mail->isSMTP();
-            $mail->Host = 'localhost';//env('MAIL_HOST');
-            $mail->SMTPAuth = true;
-            $mail->Username = env('MAIL_USERNAME');
-            $mail->Password = env('MAIL_PASSWORD');
-            $mail->SMTPSecure = env('MAIL_ENCRYPTION');
-            $mail->Port = env('MAIL_PORT');
-            $mail->setFrom(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-            $mail->addAddress('dedermus@gmail.com');
-            //$mail->addAddress($user_data['user_email']);
-            $mail->isHTML(true);
-            $mail->Subject = SystemFilter::replace_action($notification_message_data['message_title_email'], $notification_data);
-            $mail->Body    = SystemFilter::replace_action($notification_message_data['message_text_email'], $notification_data);
-            if( !$mail->send() ) {
-                Log::error('Письмо не отправлено.', (array)$mail->ErrorInfo);
+        if($notification_message_data['message_status_email'] == 'enabled' && !empty($notification_message_data['message_text_email']))
+        {
+            if(empty($user_data['user_email']) || $user_data['user_email_status'] !== 'confirmed')
+            {
                 return false;
-                //return back()->with("error", "Письмо не отправлено.")->withErrors($mail->ErrorInfo);
             }
-//            else {
-//                return back()->with("success", "Электронное письмо отправлено.");
-//            }
-        } catch (Exception $e) {
-            Log::error('Письмо не может быть отправлено.');
-            return false;
-           // return back()->with('error','Сообщение не может быть отправлено.');
-        }
-//        }
+            if (is_null($notification_message_data['message_title_email']) || is_null($notification_message_data['message_text_email']))
+            {
+                return false;
+            }
 
+            // TODO - подставить электронный адрес пользователя
+            $email = 'dedermus@gmail.com';//$user_data['user_email'];
+            $title = SystemFilter::replace_action($notification_message_data['message_title_email'], $notification_data);
+            $message = SystemFilter::replace_action($notification_message_data['message_text_email'], $notification_data);
+            SystemEmail::sendEmailCustom($email, $title, $message);
+        }
     }
 
     /**

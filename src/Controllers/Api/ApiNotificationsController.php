@@ -212,11 +212,15 @@ class ApiNotificationsController extends Controller
      */
     private function prepareResponseData($notification, $user): Collection
     {
+
+        $count = ((isset($notification['results'])) ? count($notification['results'])
+            : (isset($notification['notification_id']))) ? 1 : 0;
+        $message = ($count > 0) ? '' : 'Данные не найдены';
         return collect([
             'user_id' => optional($user)->user_id,
             'notification' => (isset($notification['results'])) ? $notification['results'] : $notification,
             'status' => true,
-            'message' => '',
+            'message' => $message,
             'response_resource_data' => NotificationsDataResource::class,
             'response_resource_dictionary' => false,
         ]);
