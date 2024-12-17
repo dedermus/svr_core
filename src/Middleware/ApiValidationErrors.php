@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Svr\Core\Exceptions\CustomException;
+use Svr\Core\Extensions\System\SystemFilter;
 
 class ApiValidationErrors
 {
@@ -68,12 +69,7 @@ class ApiValidationErrors
                 'count_new'   => 0,
                 'count_total' => 0
             ],
-            'pagination'    => [
-                'total_records' => 1,
-                'max_page'      => 1,
-                'cur_page'      => 1,
-                'per_page'      => 1,
-            ],
+            'pagination'    => SystemFilter::getPagination(),
         ];
         if (config('app.debug')) {
             $response['trace'] = array_slice($exception->getTrace(), 0, 1);
@@ -104,12 +100,7 @@ class ApiValidationErrors
                 'count_new'   => 0,
                 'count_total' => 0
             ],
-            'pagination'    => [
-                'total_records' => 1,
-                'max_page'      => 1,
-                'cur_page'      => 1,
-                'per_page'      => 1,
-            ],
+            'pagination'    => SystemFilter::getPagination(),
         ], $status);
     }
 }

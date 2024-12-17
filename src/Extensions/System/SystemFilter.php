@@ -1,6 +1,8 @@
 <?php
 namespace Svr\Core\Extensions\System;
 
+use Illuminate\Support\Facades\Config;
+
 /**
  * Системный класс обработки и фильтрации входящих данных.
  */
@@ -117,5 +119,41 @@ class SystemFilter
         }
 
         return $string;
+    }
+
+    /**
+     * Делит первый аргумент на второй.
+     * Если второй аргумент равен нулю, то возвращает ноль.
+     *
+     * @param $dividend
+     * @param $divider
+     *
+     * @return float|int
+     */
+    public static function frac($dividend, $divider): float|int
+    {
+        if (!$divider) {
+            return 0;
+        }
+
+        if ((float)$divider == 0) {
+            return 0;
+        }
+
+        return $dividend / $divider;
+    }
+
+    /**
+     * Паттерн возвращаемой секции PAGINATION
+     * @return array
+     */
+    public static function getPagination(): array
+    {
+        return [
+            'total_records' => Config::get('total_records', env('TOTAL_RECORDS')),
+            'max_page'      => ceil(self::frac(Config::get('total_records'), Config::get('per_page'))),
+            'cur_page'      => Config::get('cur_page', env('CUR_PAGE')),
+            'per_page'      => Config::get('per_page', env('PER_PAGE')),
+        ];
     }
 }

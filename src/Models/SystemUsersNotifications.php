@@ -264,8 +264,7 @@ class SystemUsersNotifications extends Model
                 return false;
             }
 
-            // TODO - подставить электронный адрес пользователя
-            $email = 'dedermus@gmail.com';//$user_data['user_email'];
+            $email = $user_data['user_email'];
             $title = SystemFilter::replace_action($notification_message_data['message_title_email'], $notification_data);
             $message = SystemFilter::replace_action($notification_message_data['message_text_email'], $notification_data);
             SystemEmail::sendEmailCustom($email, $title, $message);

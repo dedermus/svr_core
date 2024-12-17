@@ -18,6 +18,18 @@ class SystemEmail
      */
     public static function sendEmailCustom($email, $title, $message): bool
     {
+
+        $devops = env('ENVIRONMENT', 'PROD');
+        $email_pattern = 'test@test.local';
+        // если тестовая платформа
+        if ($devops == 'TEST') {
+            $email = env('MAIL_TEST', $email_pattern);
+        }
+        // если платформа для разработки
+        if ($devops == 'DEVELOPER') {
+            $email = env('MAIL_DEVELOPER', $email_pattern);
+        }
+
         $mail = new PHPMailer(true);
         try {
             /* Email SMTP Settings */
