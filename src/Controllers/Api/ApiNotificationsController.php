@@ -8,15 +8,11 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Validation\Rule;
-use Svr\Core\Enums\SystemParticipationsTypesEnum;
 use Svr\Core\Exceptions\CustomException;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersNotifications;
-use Svr\Core\Models\SystemUsersNotificationsMessages;
 use Svr\Core\Resources\NotificationsDataResource;
 use Svr\Core\Resources\SvrApiResponseResource;
-use Svr\Data\Models\DataApplications;
-use Svr\Data\Models\DataUsersParticipations;
 
 class ApiNotificationsController extends Controller
 {
@@ -51,33 +47,6 @@ class ApiNotificationsController extends Controller
         $user = $this->systemUsers->getUser(optional($notification)->user_id);
         $this->updateNotificationDateView($notification_id);
         $data = $this->prepareResponseData($notification, $user);
-
-
-
-
-        $notification_type = 'application_animal_add';
-        $company_id = 2;
-        $user_id = 1;
-        $notification_data = DataApplications::find(45)->toArray();
-       // dd($notification_type, $company_id, $user_id, $notification_data);
-        $notification_data = [
-            'application_id' => 8
-        ];
-        $this->systemUsersNotifications->notificationCreate($notification_type, $company_id, $user_id, $notification_data);
-
-
-        $per_page = 2000;
-        $cur_page = 1;
-        $filter = [
-              "user_id" => 2,
-              "user_full_name" => "Алексан",
-             "district_id" => [1, 2, 62, 1717],
-              "region_id" => [47],
-                    'sdfsdfds' => 'sdd',
-              "user_date_block_max" => "12.07.2021"
-        ];
-
-        //$this->systemUsers->users_list($per_page, $cur_page, false, $filter, '');
 
         return new SvrApiResponseResource($data);
     }
