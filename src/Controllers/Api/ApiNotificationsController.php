@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Validation\Rule;
 use Svr\Core\Exceptions\CustomException;
+use Svr\Core\Jobs\ProcessSendingEmail;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersNotifications;
 use Svr\Core\Resources\NotificationsDataResource;
@@ -47,6 +48,24 @@ class ApiNotificationsController extends Controller
         $user = $this->systemUsers->getUser(optional($notification)->user_id);
         $this->updateNotificationDateView($notification_id);
         $data = $this->prepareResponseData($notification, $user);
+//        $recorded = Http::recorded();
+//        // Basic authentication...
+//        $response = Http::acceptJson()->post('https://crm.plinor.local/allApi/getToken/', [
+//            'email' => 'svr@plinor.ru', 'password' => 'ZmQ0czNlWXpyMDY2bGQwbg=='
+//        ]);
+//
+//dd(json_decode($response->body(), true), $recorded);
+
+        $request->merge([
+            'email' => 'dedermus@gmail.com',
+            'title' => 'Тестовый заголовок',
+            'message' => 'Привет, Мир и Илья!!!'
+        ]);
+
+        ProcessSendingEmail::dispatch($request['email'], $request['title'], $request['message'])->onQueue(env('QUEUE_EMAIL', 'email'));
+
+
+
 
         return new SvrApiResponseResource($data);
     }

@@ -34,6 +34,8 @@ class SystemEmail
         try {
             /* Email SMTP Settings */
             $mail->SMTPDebug = 0;
+            $mail->CharSet = $mail::CHARSET_UTF8;
+            $mail->Encoding = $mail::ENCODING_BASE64;
             $mail->isSMTP();
             $mail->Host = env('MAIL_HOST');
             $mail->SMTPAuth = true;
@@ -43,19 +45,19 @@ class SystemEmail
             $mail->Port = env('MAIL_PORT');
             $mail->setFrom(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
             $mail->addAddress($email);
-            //$mail->addAddress($user_data['user_email']);
             $mail->isHTML(true);
             $mail->Subject = $title;
             $mail->Body    = $message;
             if( !$mail->send() ) {
-                Log::error('Письмо не отправлено.', (array)$mail->ErrorInfo);
+                Log::channel('email')->error('Письмо не отправлено.', (array)$mail->ErrorInfo);
                 return false;
             }
             else {
+                Log::channel('email')->info('Письмо отправлено.', ['email' => $email, 'title' => $title, 'message' => $message]);
                 return true;
             }
         } catch (Exception $e) {
-            Log::error('Письмо не может быть отправлено.', (array)$e->getMessage());
+            Log::channel('email')->error('Письмо не может быть отправлено.', (array)$e->getMessage());
             return false;
         }
     }
