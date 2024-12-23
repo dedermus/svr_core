@@ -3,7 +3,8 @@
 namespace Svr\Core\Jobs;
 
 use Illuminate\Foundation\Queue\Queueable;
-use Svr\Core\Extensions\Email\CrmListFarms;
+use Illuminate\Http\Client\ConnectionException;
+use Svr\Core\Extensions\Handler\CrmListFarms;
 
 class ProcessCrmGetListFarms
 {
@@ -20,9 +21,10 @@ class ProcessCrmGetListFarms
 
     /**
      * Execute the job.
-     */
-    public function handle(): void
+     *
+    */
+    public function handle()
     {
-        CrmListFarms::getListFarms($this->token);
+        CrmListFarms::getListFarms();
     }
 }

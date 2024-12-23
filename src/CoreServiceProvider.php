@@ -129,6 +129,17 @@ class CoreServiceProvider extends ServiceProvider
             ]
         );
 
+        /** Добавим провайдер для очереди email */
+        config(
+            [
+                'logging.channels.crm' => [
+                    'driver' => 'single',
+                    'path' => storage_path('logs/crm.log'),
+                    'level' => 'info', // Уровень логирования
+                ],
+            ]
+        );
+
         /** Добавим в конфиг файл config/app.php ключ 'api_prefix' равный значению ключа API_PREFIX из окружения (.env)
          * @example Получить значение: config('svr.api_prefix') config('svr.api_prefix')
          */

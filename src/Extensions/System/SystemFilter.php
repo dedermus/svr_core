@@ -156,4 +156,19 @@ class SystemFilter
             'per_page'      => Config::get('per_page', env('PER_PAGE')),
         ];
     }
+
+    /**
+     * Получить зону размещения проекта
+     * @return string
+     */
+    public static function server_tail(): string
+    {
+        $zone = (isset($_ENV['ENVIRONMENT'])) ? $_ENV['ENVIRONMENT'] : '';
+
+        return match ($zone) {
+            'TEST' => 'team',
+            'PROD' => 'ru',
+            default => 'local',
+        };
+    }
 }
