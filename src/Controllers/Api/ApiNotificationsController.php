@@ -7,8 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Svr\Core\Exceptions\CustomException;
+use Svr\Core\Jobs\ProcessCrmGetListFarms;
+use Svr\Core\Jobs\ProcessCrmGetToken;
 use Svr\Core\Jobs\ProcessSendingEmail;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersNotifications;
@@ -48,21 +51,31 @@ class ApiNotificationsController extends Controller
         $user = $this->systemUsers->getUser(optional($notification)->user_id);
         $this->updateNotificationDateView($notification_id);
         $data = $this->prepareResponseData($notification, $user);
-//        $recorded = Http::recorded();
-//        // Basic authentication...
+        $recorded = Http::recorded();
+        // Basic authentication...
 //        $response = Http::acceptJson()->post('https://crm.plinor.local/allApi/getToken/', [
 //            'email' => 'svr@plinor.ru', 'password' => 'ZmQ0czNlWXpyMDY2bGQwbg=='
 //        ]);
-//
+
+
+
+
+//        $response = Http::withUrlParameters([
+//            'host' => env('CRM_HOST'),
+//            'api' => env('CRM_API'),
+//            'endpoint' => env('CRM_END_POINT_TOKEN'),
+//        ])->acceptJson()->post('{+host}/{api}/{endpoint}/', [
+//            'email' => 'svr@plinor.ru', 'password' => 'ZmQ0czNlWXpyMDY2bGQwbg=='
+//        ]);
+//        $response = json_decode($response->body(), true);
+//        if ($response['data']['token']) {
+//            var_export($response['data']['token']); die();
+//        }
 //dd(json_decode($response->body(), true), $recorded);
-
-        $request->merge([
-            'email' => 'dedermus@gmail.com',
-            'title' => 'Тестовый заголовок',
-            'message' => 'Привет, Мир и Илья!!!'
-        ]);
-
-        ProcessSendingEmail::dispatch($request['email'], $request['title'], $request['message'])->onQueue(env('QUEUE_EMAIL', 'email'));
+//
+//       // ProcessCrmGetListFarms::dispatch()
+//        ProcessCrmGetToken::dispatch('svr@plinor.ru', 'ZmQ0czNlWXpyMDY2bGQwbg==', );
+        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
 
 
 
