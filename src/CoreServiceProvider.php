@@ -4,6 +4,7 @@ namespace Svr\Core;
 
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
+use Svr\Core\Console\Commands\ListWorkers;
 use Svr\Core\Middleware\ApiValidationErrors;
 use Svr\Core\Middleware\CheckUserPermissions;
 use Svr\Core\Exceptions\ExceptionHandler;
@@ -11,6 +12,10 @@ use Svr\Core\Models\SystemUsers;
 
 class CoreServiceProvider extends ServiceProvider
 {
+        protected array $commands = [
+        ListWorkers::class,
+    ];
+
     /**
      * {@inheritdoc}
      */
@@ -18,6 +23,11 @@ class CoreServiceProvider extends ServiceProvider
     {
         // Регистрируем routs
         $this->loadRoutesFrom(__DIR__ . '/../routes/Api/api.php');
+
+        // Загрузка маршрутов консоли
+        if ($this->app->runningInConsole()) {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/console.php');
+        }
         $this->register();
 
 
@@ -114,5 +124,10 @@ class CoreServiceProvider extends ServiceProvider
          * @example Получить значение: config('svr.api_prefix') config('svr.api_prefix')
          */
         $this->mergeConfigFrom(__DIR__ . '/../config/app.php', 'svr');
+        $this->mergeConfigFrom(__DIR__ . '/../config/logging.php', 'svr');  // Добавим в конфиг канал для логера
+
+        /** Регистрируем кастомные команды */
+        $this->commands($this->commands);
+
     }
 }
