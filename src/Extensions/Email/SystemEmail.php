@@ -49,15 +49,15 @@ class SystemEmail
             $mail->Subject = $title;
             $mail->Body    = $message;
             if( !$mail->send() ) {
-                Log::channel('svr.email')->error('Письмо не отправлено.', (array)$mail->ErrorInfo);
+                Log::channel('email')->error('Письмо не отправлено.', (array)$mail->ErrorInfo);
                 return false;
             }
             else {
-                Log::channel('svr.email')->info('Письмо отправлено.', ['email' => $email, 'title' => $title, 'message' => $message]);
+                Log::channel('email')->info('Письмо отправлено.', ['email' => $email, 'title' => $title, 'message' => $message]);
                 return true;
             }
         } catch (Exception $e) {
-            Log::channel('svr.email')->error('Письмо не может быть отправлено.', (array)$e->getMessage());
+            Log::channel('email')->error('Письмо не может быть отправлено.', (array)$e->getMessage());
             return false;
         }
     }

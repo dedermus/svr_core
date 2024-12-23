@@ -99,32 +99,30 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        /** Добавим защитника для API роутеров */
-        config(
-            [
-                'auth.guards.svr_api' => [
-                    'driver' => 'sanctum',
-                    'provider' => 'svr_users',
-                    'hash' => false,
-                ],
-            ]);
+        // Добавим защитника для API роутеров, если он еще не определен
+        config([
+            'auth.guards.svr_api' => [
+                'driver' => 'sanctum',
+                'provider' => 'svr_users',
+                'hash' => false,
+            ],
+        ]);
 
-        /** Добавим провайдера для API роутеров */
-        config(
-            [
-                'auth.providers.svr_users' => [
-                    'driver' => 'eloquent',
-                    'model' => SystemUsers::class,
-                    'user_password' => 'user_password',
-                    'user_email' => 'user_email',
-                ]
-            ]);
+        // Добавим провайдера для API роутеров, если он еще не определен
+        config([
+            'auth.providers.svr_users' => [
+                'driver' => 'eloquent',
+                'model' => SystemUsers::class,
+                'user_password' => 'user_password',
+                'user_email' => 'user_email',
+            ],
+        ]);
 
         /** Добавим в конфиг файл config/app.php ключ 'api_prefix' равный значению ключа API_PREFIX из окружения (.env)
          * @example Получить значение: config('svr.api_prefix') config('svr.api_prefix')
          */
+
         $this->mergeConfigFrom(__DIR__ . '/../config/app.php', 'svr');
-        $this->mergeConfigFrom(__DIR__ . '/../config/logging.php', 'svr');  // Добавим в конфиг канал для логера
 
         /** Регистрируем кастомные команды */
         $this->commands($this->commands);

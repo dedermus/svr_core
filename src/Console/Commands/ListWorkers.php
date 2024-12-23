@@ -31,14 +31,19 @@ class ListWorkers extends Command
      */
     public function handle()
     {
-        // Проверяем, доступны ли команды ps и grep
-        if (!shell_exec('command -v ps') || !shell_exec('command -v grep')) {
-            $this->error('Команды ps или grep недоступны. Убедитесь, что они установлены.');
-            return;
+        // Проверяем, доступна ли команда tasklist
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            $command = 'tasklist /FO CSV /NH';
+        } else {
+            if (!shell_exec('command -v ps') || !shell_exec('command -v grep')) {
+                $this->error('Команды ps или grep недоступны. Убедитесь, что они установлены.');
+                return;
+            }
+            $command = 'ps aux';
         }
 
         // Используем системную команду для поиска запущенных воркеров
-        $process = new Process(['ps', 'aux']);
+        $process = new Process(explode(' ', $command));
         $process->run();
 
         if (!$process->isSuccessful()) {
@@ -46,7 +51,7 @@ class ListWorkers extends Command
             return;
         }
 
-        // Получаем вывод команды ps aux
+        // Получаем вывод команды
         $output = $process->getOutput();
 
         // Фильтруем вывод с помощью PHP
@@ -58,24 +63,38 @@ class ListWorkers extends Command
             if (empty($line)) {
                 continue;
             }
-            // Ищем строки, содержащие "queue:work"
-            if (strpos($line, 'queue:work') !== false) {
-                // Разбиваем строку на части
-                $parts = preg_split('/\s+/', $line);
 
-                // Определяем команду
-                $command = implode(' ', array_slice($parts, 4)); // Собираем команду из оставшихся элементов
+            // Для Windows используем CSV формат
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                $parts = str_getcsv($line);
+                if (strpos($parts[0], 'php') !== false && strpos($parts[0], 'queue:work') !== false) {
+                    $workers[] = [
+                        'pid' => $parts[1],         // PID процесса
+                        'user' => $parts[7],        // Пользователь
+                        'command' => $parts[0],     // Команда
+                        'queue' => $this->extractQueueFromCommand($parts[0]), // Очередь
+                    ];
+                }
+            } else {
+                // Ищем строки, содержащие "queue:work"
+                if (strpos($line, 'queue:work') !== false) {
+                    // Разбиваем строку на части
+                    $parts = preg_split('/\s+/', $line);
 
-                // Ищем аргументы команды
-                $queue = $this->extractQueueFromCommand($command);
+                    // Определяем команду
+                    $command = implode(' ', array_slice($parts, 4)); // Собираем команду из оставшихся элементов
 
-                // Добавляем информацию о воркере в массив
-                $workers[] = [
-                    'pid' => $parts[1],         // PID процесса
-                    'user' => $parts[2],        // Пользователь
-                    'command' => $command,      // Команда
-                    'queue' => $queue,          // Очередь
-                ];
+                    // Ищем аргументы команды
+                    $queue = $this->extractQueueFromCommand($command);
+
+                    // Добавляем информацию о воркере в массив
+                    $workers[] = [
+                        'pid' => $parts[1],         // PID процесса
+                        'user' => $parts[2],        // Пользователь
+                        'command' => $command,     // Команда
+                        'queue' => $queue,         // Очередь
+                    ];
+                }
             }
         }
 
@@ -85,7 +104,6 @@ class ListWorkers extends Command
         } else {
             $this->info('Running workers:');
             $headers = ['PID', 'User', 'Command', 'Queue'];
-            // Метод фреймворка Laravel table выводит таблицу в виде красивой таблицы
             $this->table($headers, $workers);
         }
     }
