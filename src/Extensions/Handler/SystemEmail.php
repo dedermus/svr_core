@@ -1,6 +1,6 @@
 <?php
 
-namespace Svr\Core\Extensions\Email;
+namespace Svr\Core\Extensions\Handler;
 
 use Exception;
 use Illuminate\Support\Facades\Log;

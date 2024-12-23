@@ -4,7 +4,7 @@ namespace Svr\Core\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Svr\Core\Extensions\Email\SystemEmail;
+use Svr\Core\Extensions\Handler\SystemEmail;
 
 class ProcessSendingEmail implements ShouldQueue
 {
