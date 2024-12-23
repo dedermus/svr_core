@@ -9,6 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 Schedule::command('inspire')->everyTenMinutes()->runInBackground();
 Schedule::command('route:list')->dailyAt('02:00');
-Schedule::command('queue:work --queue=email')->onevery();
+Schedule::command('queue:work --queue=email')->everyMinute();
 Schedule::command('queue:work --queue=crm')->everyMinute();
 
