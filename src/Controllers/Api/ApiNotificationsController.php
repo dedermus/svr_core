@@ -79,7 +79,8 @@ class ApiNotificationsController extends Controller
 //        ProcessCrmGetToken::dispatch('svr@plinor.ru', 'ZmQ0czNlWXpyMDY2bGQwbg==', );
        // ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
         //CrmAuth::getToken();
-        CrmListFarms::getListFarms();
+        ProcessCrmGetListFarms::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+        //CrmListFarms::getListFarms();
 
 
 
