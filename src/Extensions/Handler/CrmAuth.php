@@ -48,7 +48,7 @@ class CrmAuth
 
                 if (isset($responseData['data']['token'])) {
                     Log::channel('crm')->info('Токен успешно получен.');
-                    Context::add('crm_token', $responseData['data']['token']);
+                    Context::addHidden('crm_token', $responseData['data']['token']);
                     return true;
                 }
 

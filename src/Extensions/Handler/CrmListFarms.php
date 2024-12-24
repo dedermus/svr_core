@@ -20,7 +20,6 @@ class CrmListFarms
     /**
      * Запрос на внешний ресурс для получения списка хозяйств
      * @return bool
-     * @throws ConnectionException
      */
     public static function getListFarms(): bool
     {
@@ -37,10 +36,10 @@ class CrmListFarms
                 'api' => env('CRM_API'),
                 'endpoint' => env('CRM_END_POINT_FARMS'),
             ])->acceptJson()->post('{+host}/{api}/{endpoint}/', [
-                'token' => Context::get('crm_token'),
+                'token' => Context::getHidden('crm_token'),
             ]);
 
-            Context::forget('crm_token');
+            //Context::forget('crm_token');
 
             // Обрабатываем успешный ответ
             if ($response->successful()) {
@@ -91,9 +90,9 @@ class CrmListFarms
         $count_inset = 0;
         $count_update = 0;
 
-        DB::beginTransaction();
         try {
             foreach ($request['data'] as $item) {
+                DB::beginTransaction();
                 $company_base_index = $item['base_index'] ?? false;
                 $company_inn = $item['company_inn'] ?? false;
 
@@ -115,7 +114,7 @@ class CrmListFarms
 
                         // Создание локации компании
                         $location_item = [
-                            'company_id' => $company->id,
+                            'company_id' => $company->company_id,
                             'region_id' => $item['nobl'],
                             'district_id'=> $item['nrn'],
                         ];
@@ -131,9 +130,10 @@ class CrmListFarms
                             'company_inn'        => $item['company_inn'],
                             'company_kpp'        => $item['company_kpp'],
                         ])->save();
-
+                        // TODO - У нас может быть несколько локаций компании, надо об этом помнить,
+                        // так как обновление произойдет для всех локаций компании по её company_id
                         // Обновление локации компании
-                        DataCompaniesLocations::where('company_id', $res->id)->update([
+                        DataCompaniesLocations::where('company_id', $res->company_id)->update([
                             'region_id' => $item['nobl'],
                             'district_id' => $item['nrn'],
                         ]);
@@ -143,11 +143,10 @@ class CrmListFarms
                 } else {
                     Log::channel('crm')->warning('У хозяйства нет ИНН или Базового индекса.', $item);
                 }
+                DB::commit();
             }
 
-            DB::commit();
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::channel('crm')->error('Ошибка при обработке данных компаний.', ['message' => $e->getMessage()]);
         }
 
