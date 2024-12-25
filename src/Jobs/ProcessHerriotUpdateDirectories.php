@@ -2,6 +2,7 @@
 
 namespace Svr\Core\Jobs;
 
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Svr\Core\Extensions\Handler\HerriotUpdateDirectories;
 

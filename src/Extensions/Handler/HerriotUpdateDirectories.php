@@ -2,20 +2,17 @@
 
 namespace Svr\Core\Extensions\Handler;
 
-use DateTime;
-use Exception;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Svr\Core\Extensions\Herriot\ApiHerriot;
-use Svr\Core\Extensions\System\SystemFilter;
 use Svr\Core\Models\SystemUsersNotifications;
-use Svr\Data\Models\DataCompanies;
-use Svr\Data\Models\DataCompaniesLocations;
+use Svr\Directories\Models\DirectoryAnimalsBreeds;
+use Svr\Directories\Models\DirectoryAnimalsSpecies;
+use Svr\Directories\Models\DirectoryCountries;
+use Svr\Directories\Models\DirectoryKeepingPurposes;
+use Svr\Directories\Models\DirectoryKeepingTypes;
+use Svr\Directories\Models\DirectoryToolsLocations;
 
 class HerriotUpdateDirectories
 {
@@ -56,7 +53,7 @@ class HerriotUpdateDirectories
             'data_name'										=> 'animalBreed',
             'response_data_keys'							=> ['name'],
             'response_props_keys'							=> ['uuid', 'guid'],
-            'custom_method'									=> 'animals_breeds',
+            'custom_method'									=> 'animalsBreeds',
             'method_save'                                   => 'saveAnimalsBreeds',
         ],
         'keeping_purposes'								=> [
@@ -102,7 +99,8 @@ class HerriotUpdateDirectories
     {
         $herriot_user = env('HERRIOT_USER', false);
         $herriot_password = env('HERRIOT_PASSWORD', false);
-        if ($herriot_user && $herriot_password)
+
+        if (!$herriot_user || !$herriot_password)
         {
             Log::channel('herriot_directories')->warning('Обновление справочников. Не заданы логин или пароль от хорриота.');
             (new SystemUsersNotifications)->notificationsSendAdmin('Обновление справочников из Хорриот. Не заданы логин или пароль от хорриота. (HerriotUpdateDirectories.php)');
@@ -121,7 +119,7 @@ class HerriotUpdateDirectories
 
             if($result === false || (is_array($result) && isset($result['error'])))
             {
-                Log::channel('herriot_directories')->warning('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не пришли данные из Хорриот.', $result);
+                Log::channel('herriot_directories')->warning('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не пришли данные из Хорриот.', [$result]);
                 (new SystemUsersNotifications)->notificationsSendAdmin('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не пришли данные из Хорриот. (HerriotUpdateDirectories.php)');
                 continue;
             }
@@ -130,7 +128,7 @@ class HerriotUpdateDirectories
 
             if ($directory_xml === false)
             {
-                Log::channel('herriot_directories')->warning('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не валидный XML из Хорриота.', $result);
+                Log::channel('herriot_directories')->warning('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не валидный XML из Хорриота.', [$result]);
                 (new SystemUsersNotifications)->notificationsSendAdmin('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не валидный XML из Хорриота. (HerriotUpdateDirectories.php)');
                 continue;
             }
@@ -139,7 +137,7 @@ class HerriotUpdateDirectories
 
             if (!isset($directory_path->Body))
             {
-                Log::channel('herriot_directories')->warning('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Нет BODY из Хорриота.)', $result);
+                Log::channel('herriot_directories')->warning('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Нет BODY из Хорриота.)', [$result]);
                 (new SystemUsersNotifications)->notificationsSendAdmin('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Нет BODY из Хорриота. (HerriotUpdateDirectories.php)');
                 continue;
             }
@@ -149,7 +147,7 @@ class HerriotUpdateDirectories
 
             if (!isset($v2->{$request_data['data_container']}))
             {
-                Log::channel('herriot_directories')->warning('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не пришел data_container из Хорриота.', $result);
+                Log::channel('herriot_directories')->warning('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не пришел data_container из Хорриота.', [$result]);
                 (new SystemUsersNotifications)->notificationsSendAdmin('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не пришел data_container из Хорриота. (HerriotUpdateDirectories.php)');
                 continue;
             }
@@ -159,7 +157,7 @@ class HerriotUpdateDirectories
 
             if (!isset($dt->{$request_data['data_box']}))
             {
-                Log::channel('herriot_directories')->warning('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не пришел data_box из Хорриота.', $result);
+                Log::channel('herriot_directories')->warning('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не пришел data_box из Хорриота.', [$result]);
                 (new SystemUsersNotifications)->notificationsSendAdmin('Обновление справочников из Хорриот. '.$request_data['api_method'].'. Не пришел data_box из Хорриота. (HerriotUpdateDirectories.php)');
                 continue;
             }
@@ -185,7 +183,7 @@ class HerriotUpdateDirectories
 
                 if($request_data['custom_method'])
                 {
-                    $custom_result						= $request_data['custom_method']($item, $a);
+                    $custom_result						= self::{$request_data['custom_method']}($item, $a);
                     $directory_result[]					= array_merge($item_result, $custom_result);
                 }else{
                     $directory_result[]					= $item_result;
@@ -193,7 +191,7 @@ class HerriotUpdateDirectories
 
             }
 
-            $request_data['method_save']($directory_result);
+            self::{$request_data['method_save']}($directory_result);
         }
         return true;
     }
@@ -201,7 +199,7 @@ class HerriotUpdateDirectories
     /**
      * Метод извлечения вложенных данных категории для справочника пород
      */
-    function animalsBreeds($item_data, $item_properties)
+    static function animalsBreeds($item_data, $item_properties)
     {
         $species									= $item_data->species;
         $species_properties							= $species->children(self::$directory_namespace_properties);
@@ -220,25 +218,21 @@ class HerriotUpdateDirectories
     /**
      * Метод сохранения данных для типов содержания животных
      */
-    function saveKeepingTypes($directory_items_list)
+    static function saveKeepingTypes($directory_items_list)
     {
-        global $loader;
-
         foreach ($directory_items_list as $key => $value) {
 
-            $query = 'SELECT * FROM '.SCHEMA_DIRECTORIES.'.'.TBL_KEEPING_TYPES.' WHERE keeping_type_guid_horriot = :keeping_type_guid_horriot';
-            $item = $loader->get_data(DB_MAIN, $query, ['keeping_type_guid_horriot' => $value['guid']], 'row');
+            $item = DirectoryKeepingTypes::where('keeping_type_guid_horriot', '=', $value['guid'])->first();
 
-            if ($item === false)
+            if (empty($item))
             {
                 $directory_item = [
-                    'keeping_type_guid_self' => system_GUID::v4(),
+                    'keeping_type_guid_self' => Str::uuid(),
                     'keeping_type_guid_horriot' => $value['guid'],
                     'keeping_type_name' => $value['name'],
-                    'keeping_type_created_at' => date('d.m.Y H:i:s')
+                    'created_at' => date('d.m.Y H:i:s')
                 ];
-
-                $loader->insert(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_KEEPING_TYPES, $directory_item);
+                DB::table(DirectoryKeepingTypes::getTableName())->insert($directory_item);
             }
             else
             {
@@ -247,9 +241,10 @@ class HerriotUpdateDirectories
                     $directory_item = [
                         'keeping_type_uuid_horriot' => $value['uuid'],
                         'keeping_type_name' => $value['name'],
+                        'updated_at' => date('d.m.Y H:i:s')
                     ];
-                    $loader->update(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_KEEPING_TYPES, $directory_item,
-                        ['keeping_type_id' => $item['keeping_type_id']]);
+                    DB::table(DirectoryKeepingTypes::getTableName())->where('keeping_type_id', '=', $item['keeping_type_id'])
+                        ->update($directory_item);
                 }
             }
         }
@@ -259,25 +254,22 @@ class HerriotUpdateDirectories
     /**
      * Метод сохранения данных для видов животных
      */
-    function save_animals_species($directory_items_list)
+    static function saveAnimalsSpecies($directory_items_list)
     {
-        global $loader;
-
         foreach ($directory_items_list as $key => $value) {
 
-            $query = 'SELECT * FROM '.SCHEMA_DIRECTORIES.'.'.TBL_ANIMALS_SPECIES.' WHERE specie_guid_horriot = :specie_guid_horriot';
-            $item = $loader->get_data(DB_MAIN, $query, ['specie_guid_horriot' => $value['guid']], 'row');
+            $item = DirectoryAnimalsSpecies::where('specie_guid_horriot', '=', $value['guid'])->first();
 
-            if ($item === false)
+            if (empty($item))
             {
                 $directory_item = [
-                    'specie_guid_self'      => system_GUID::v4(),
+                    'specie_guid_self'      => Str::uuid()->toString(),
                     'specie_guid_horriot'   => $value['guid'],
                     'specie_name'           => $value['name'],
-                    'specie_created_at'     => date('d.m.Y H:i:s')
+                    'created_at'            => date('d.m.Y H:i:s')
                 ];
-
-                $loader->insert(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_ANIMALS_SPECIES, $directory_item);
+                //DB::table(DirectoryAnimalsSpecies::getTableName())->insert($directory_item);
+                DirectoryAnimalsSpecies::fill($directory_item)->save();
             }
             else
             {
@@ -287,8 +279,8 @@ class HerriotUpdateDirectories
                         'specie_uuid_horriot' => $value['uuid'],
                         'specie_name' => $value['name'],
                     ];
-                    $loader->update(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_ANIMALS_SPECIES, $directory_item,
-                        ['specie_id' => $item['specie_id']]);
+                    DB::table(DirectoryAnimalsSpecies::getTableName())->where('specie_id', '=', $item['specie_id'])
+                        ->update($directory_item);
                 }
             }
         }
@@ -296,42 +288,36 @@ class HerriotUpdateDirectories
 
 
     /**
-     * Метод сохранения данных для видов животных
+     * Метод сохранения данных для пород животных
      */
-    function save_animals_breeds($directory_items_list)
+    static function saveAnimalsBreeds($directory_items_list)
     {
-        global $loader;
-        foreach ($directory_items_list as $key => $value) {
+        foreach ($directory_items_list as $key => $value)
+        {
+            $item = DirectoryAnimalsBreeds::where('breed_guid_horriot', '=', $value['guid'])->first();
 
-            $query = 'SELECT * FROM '.SCHEMA_DIRECTORIES.'.'.TBL_ANIMALS_BREEDS.' WHERE breed_guid_horriot = :breed_guid_horriot';
-            $item = $loader->get_data(DB_MAIN, $query, ['breed_guid_horriot' => $value['guid']], 'row');
+            $specie_id = DirectoryAnimalsSpecies::where('specie_guid_horriot', '=', $value['category_guid'])->first()->toArray();
 
-            if ($item === false)
+            if (empty($item))
             {
-                $specie_query = 'SELECT specie_id FROM '.SCHEMA_DIRECTORIES.'.'.TBL_ANIMALS_SPECIES.' WHERE specie_guid_horriot = :specie_guid_horriot';
-                $specie_id = $loader->get_data(DB_MAIN, $specie_query, ['specie_guid_horriot' => $value['category_guid']], 'row');
-                if ($specie_id !== false)
+                if (!empty($specie_id))
                 {
                     $directory_item = [
                         'specie_id'             => $specie_id['specie_id'],
-                        'breed_guid_self'       => system_GUID::v4(),
+                        'breed_guid_self'       => Str::uuid(),
                         'breed_guid_horriot'    => $value['guid'],
                         'breed_uuid_horriot'    => $value['uuid'],
                         'breed_name'            => $value['name'],
-                        'breed_created_at'      => date('d.m.Y H:i:s')
+                        'created_at'            => date('d.m.Y H:i:s')
                     ];
 
-                    $loader->insert(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_ANIMALS_BREEDS, $directory_item);
+                    DB::table(DirectoryAnimalsBreeds::getTableName())->insert($directory_item);
                 }
             }
             else
             {
-
                 if ($item['breed_uuid_horriot'] != $value['uuid'])
                 {
-                    $specie_query = 'SELECT specie_id FROM '.SCHEMA_DIRECTORIES.'.'.TBL_ANIMALS_SPECIES.' WHERE specie_guid_horriot = :specie_guid_horriot';
-                    $specie_id = $loader->get_data(DB_MAIN, $specie_query, ['specie_guid_horriot' => $value['category_guid']], 'row');
-
                     if ($specie_id !== false)
                     {
                         $directory_item = [
@@ -339,8 +325,9 @@ class HerriotUpdateDirectories
                             'breed_uuid_horriot' => $value['uuid'],
                             'breed_name' => $value['name'],
                         ];
-                        $loader->update(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_ANIMALS_BREEDS, $directory_item,
-                            ['breed_guid_horriot' => $item['breed_guid_horriot']]);
+
+                        DB::table(DirectoryAnimalsBreeds::getTableName())->where('breed_guid_horriot', '=', $item['breed_guid_horriot'])
+                            ->update($directory_item);
                     }
                 }
             }
@@ -351,25 +338,22 @@ class HerriotUpdateDirectories
     /**
      * Метод сохранения данных для целей содержания животных
      */
-    function save_keeping_purposes($directory_items_list)
+    static function saveKeepingPurposes($directory_items_list)
     {
-        global $loader;
+        foreach ($directory_items_list as $key => $value)
+        {
+            $item = DirectoryKeepingPurposes::where('keeping_purpose_guid_horriot', '=', $value['guid'])->first();
 
-        foreach ($directory_items_list as $key => $value) {
-
-            $query = 'SELECT * FROM '.SCHEMA_DIRECTORIES.'.'.TBL_KEEPING_PURPOSES.' WHERE keeping_purpose_guid_horriot = :keeping_purpose_guid_horriot';
-            $item = $loader->get_data(DB_MAIN, $query, ['keeping_purpose_guid_horriot' => $value['guid']], 'row');
-
-            if ($item === false)
+            if (empty($item))
             {
                 $directory_item = [
-                    'keeping_purpose_guid_self'       => system_GUID::v4(),
+                    'keeping_purpose_guid_self'       => Str::uuid(),
                     'keeping_purpose_guid_horriot'    => $value['guid'],
                     'keeping_purpose_name'            => $value['name'],
-                    'keeping_purpose_created_at'      => date('d.m.Y H:i:s')
+                    'created_at'                      => date('d.m.Y H:i:s')
                 ];
 
-                $loader->insert(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_KEEPING_PURPOSES, $directory_item);
+                DB::table(DirectoryKeepingPurposes::getTableName())->insert($directory_item);
             }
             else
             {
@@ -379,36 +363,33 @@ class HerriotUpdateDirectories
                         'keeping_purpose_uuid_horriot' => $value['uuid'],
                         'keeping_purpose_name' => $value['name'],
                     ];
-                    $loader->update(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_KEEPING_PURPOSES, $directory_item,
-                        ['keeping_purpose_id' => $item['keeping_purpose_id']]);
+
+                    DB::table(DirectoryKeepingPurposes::getTableName())->where('keeping_purpose_id', '=', $item['keeping_purpose_id'])
+                        ->update($directory_item);
                 }
             }
         }
     }
 
-
     /**
      * Метод сохранения данных для мест нанесения маркировки животных
      */
-    function save_marking_locations($directory_items_list)
+    static function saveMarkingLocations($directory_items_list)
     {
-        global $loader;
-
         foreach ($directory_items_list as $key => $value) {
 
-            $query = 'SELECT * FROM '.SCHEMA_DIRECTORIES.'.'.TBL_TOOLS_LOCATIONS.' WHERE tool_location_guid_horriot = :tool_location_guid_horriot';
-            $item = $loader->get_data(DB_MAIN, $query, ['tool_location_guid_horriot' => $value['guid']], 'row');
+            $item = DirectoryToolsLocations::where('tool_location_guid_horriot', '=', $value['guid'])->first();
 
-            if ($item === false)
+            if (empty($item))
             {
                 $directory_item = [
-                    'tool_location_guid_self'       => system_GUID::v4(),
+                    'tool_location_guid_self'       => Str::uuid(),
                     'tool_location_guid_horriot'    => $value['guid'],
                     'tool_location_name'            => $value['name'],
-                    'tool_location_created_at'      => date('d.m.Y H:i:s')
+                    'created_at'                    => date('d.m.Y H:i:s')
                 ];
 
-                $loader->insert(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_TOOLS_LOCATIONS, $directory_item);
+                DB::table(DirectoryToolsLocations::getTableName())->insert($directory_item);
             }
             else
             {
@@ -418,41 +399,38 @@ class HerriotUpdateDirectories
                         'tool_location_uuid_horriot' => $value['uuid'],
                         'tool_location_name' => $value['name'],
                     ];
-                    $loader->update(DB_MAIN, SCHEMA_DIRECTORIES . '.' . TBL_TOOLS_LOCATIONS, $directory_item,
-                        ['tool_location_id' => $item['tool_location_id']]);
+
+                    DB::table(DirectoryKeepingPurposes::getTableName())->where('tool_location_id', '=', $item['tool_location_id'])
+                        ->update($directory_item);
                 }
             }
         }
     }
 
-
     /**
      * Метод сохранения данных стран
      */
-    function save_countries($directory_items_list)
+    static function saveCountries($directory_items_list)
     {
-        global $loader;
-
         foreach ($directory_items_list as $key => $value) {
 
-            $query = 'SELECT * FROM '.SCHEMA_DIRECTORIES.'.'.TBL_COUNTRIES.' WHERE country_guid_horriot = :country_guid_horriot';
-            $item = $loader->get_data(DB_MAIN, $query, ['country_guid_horriot' => $value['guid']], 'row');
+            $item = DirectoryCountries::where('country_guid_horriot', '=', $value['guid'])->first();
 
-            if ($item === false)
+            if (empty($item))
             {
                 $directory_item = [
-                    'country_guid_self'     => system_GUID::v4(),
+                    'country_guid_self'     => Str::uuid(),
                     'country_guid_horriot'  => $value['guid'],
                     'country_uuid_horriot'  => $value['uuid'],
-                    'country_name'            => $value['name'],
-                    //'country_fullName'      => $value['fullName'],
-                    'country_name_eng'        => $value['englishName'],
+                    'country_name'          => $value['name'],
+                    //'country_fullName'    => $value['fullName'],
+                    'country_name_eng'      => $value['englishName'],
                     'country_kod'           => $value['code'],
                     'country_kod3'          => $value['code3'],
-                    'country_created_at'    => date('d.m.Y H:i:s')
+                    'created_at'            => date('d.m.Y H:i:s')
                 ];
 
-                $loader->insert(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_COUNTRIES, $directory_item);
+                DB::table(DirectoryCountries::getTableName())->insert($directory_item);
             }
             else
             {
@@ -466,8 +444,9 @@ class HerriotUpdateDirectories
                         'country_kod' => $value['code'],
                         'country_kod3' => $value['code3'],
                     ];
-                    $loader->update(DB_MAIN, SCHEMA_DIRECTORIES.'.'.TBL_COUNTRIES, $directory_item,
-                        ['country_id' => $item['country_id']]);
+
+                    DB::table(DirectoryCountries::getTableName())->where('country_id', '=', $item['country_id'])
+                        ->update($directory_item);
                 }
             }
         }
