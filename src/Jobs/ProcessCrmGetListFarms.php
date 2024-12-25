@@ -2,10 +2,11 @@
 
 namespace Svr\Core\Jobs;
 
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Svr\Core\Extensions\Handler\CrmListFarms;
 
-class ProcessCrmGetListFarms
+class ProcessCrmGetListFarms implements ShouldQueue
 {
     use Queueable;
 
