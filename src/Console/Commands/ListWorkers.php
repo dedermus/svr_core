@@ -7,9 +7,12 @@ use Symfony\Component\Process\Process;
 
 /**
  * Класс консольной команды artisan для вывода списка воркеров
+ * Работает только в ОС Linux
  */
 class ListWorkers extends Command
 {
+    //TODO Необходимо реализовать рабочий вариант для ОС Windows
+
     /**
      * Имя и подпись консольной команды.
      *
@@ -31,21 +34,36 @@ class ListWorkers extends Command
      */
     public function handle()
     {
-        // Проверяем, доступна ли команда tasklist
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $command = 'tasklist /FO CSV /NH';
-        } else {
+        // Определяем операционную систему
+        $os = strtoupper(substr(PHP_OS, 0, 3));
+
+        // Проверяем, доступны ли команды ps или wmic в зависимости от ОС
+        if ($os === 'LIN') {
             if (!shell_exec('command -v ps') || !shell_exec('command -v grep')) {
                 $this->error('Команды ps или grep недоступны. Убедитесь, что они установлены.');
                 return;
             }
-            $command = 'ps aux';
+        } elseif ($os === 'WIN') {
+            if (!shell_exec('where wmic')) {
+                $this->error('Команда wmic недоступна. Убедитесь, что она установлена.');
+                return;
+            }
+        } else {
+            $this->error('Операционная система не поддерживается.');
+            return;
         }
 
         // Используем системную команду для поиска запущенных воркеров
-        $process = new Process(explode(' ', $command));
-        $process->run();
+        if ($os === 'LIN') {
+            $this->info('OS: LINUX');
+            $process = new Process(['ps', 'aux']);
+        } elseif ($os === 'WIN') {
+            $this->info('OS: WINDOWS');
+            $process = new Process(['wmic', 'process', 'get', 'name,commandline,processid']);
+        }
 
+        // Используем системную команду для поиска запущенных воркеров
+        $process->run();
         if (!$process->isSuccessful()) {
             $this->error('Не удалось получить список воркеров.');
             return;
@@ -56,6 +74,9 @@ class ListWorkers extends Command
 
         // Фильтруем вывод с помощью PHP
         $lines = explode("\n", $output);
+        $lines = array_filter($lines);
+
+        // Ищем строки, содержащие "queue:work"
         $workers = [];
 
         foreach ($lines as $line) {
@@ -64,8 +85,8 @@ class ListWorkers extends Command
                 continue;
             }
 
-            // Для Windows используем CSV формат
-            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            // Для Windows
+            if ($os === 'WIN') {
                 $parts = str_getcsv($line);
                 if (strpos($parts[0], 'php') !== false && strpos($parts[0], 'queue:work') !== false) {
                     $workers[] = [
@@ -100,7 +121,7 @@ class ListWorkers extends Command
 
         // Выводим информацию о воркерах в консоль. Оформляем в виде таблицы.
         if (empty($workers)) {
-            $this->info('No workers found.');
+            $this->info('Воркеры не найдены.');
         } else {
             $this->info('Running workers:');
             $headers = ['PID', 'User', 'Command', 'Queue'];
