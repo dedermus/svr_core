@@ -10,10 +10,8 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 use Svr\Core\Exceptions\CustomException;
-use Svr\Core\Extensions\Handler\CrmAuth;
 use Svr\Core\Extensions\Handler\CrmListFarms;
-use Svr\Core\Jobs\ProcessCrmGetListFarms;
-use Svr\Core\Jobs\ProcessCrmGetToken;
+use Svr\Core\Jobs\ProcessCrmGetListUsers;
 use Svr\Core\Jobs\ProcessSendingEmail;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersNotifications;
@@ -79,8 +77,7 @@ class ApiNotificationsController extends Controller
 //        ProcessCrmGetToken::dispatch('svr@plinor.ru', 'ZmQ0czNlWXpyMDY2bGQwbg==', );
        // ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
         //CrmAuth::getToken();
-        ProcessCrmGetListFarms::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-        //CrmListFarms::getListFarms();
+        ProcessCrmGetListUsers::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
 
 
 

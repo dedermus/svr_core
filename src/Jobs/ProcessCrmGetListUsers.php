@@ -3,9 +3,9 @@
 namespace Svr\Core\Jobs;
 
 use Illuminate\Foundation\Queue\Queueable;
-use Svr\Core\Extensions\Handler\CrmListFarms;
+use Svr\Core\Extensions\Handler\CrmListUsers;
 
-class ProcessCrmGetListFarms
+class ProcessCrmGetListUsers
 {
     use Queueable;
 
@@ -22,6 +22,6 @@ class ProcessCrmGetListFarms
     */
     public function handle(): void
     {
-        CrmListFarms::getListFarms();
+        CrmListUsers::getListUsers();
     }
 }

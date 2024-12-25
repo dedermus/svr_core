@@ -20,7 +20,6 @@ class CrmListFarms
     /**
      * Запрос на внешний ресурс для получения списка хозяйств
      * @return bool
-     * @throws ConnectionException
      */
     public static function getListFarms(): bool
     {
@@ -30,17 +29,25 @@ class CrmListFarms
             return false;
         }
 
+        $host = env('CRM_HOST', '');
+        $api = 'allApi';
+        $endpoint = 'getListFarms';
+
+        // Проверка наличия необходимых параметров
+        if (empty($host)) {
+            Log::channel('crm')->error('Не все параметры окружения установлены для получения списка хозяйств.');
+            return false;
+        }
+
         try {
             // Формируем URL и выполняем запрос
             $response = Http::withUrlParameters([
-                'host' => env('CRM_HOST') . '.' . SystemFilter::server_tail(),
-                'api' => env('CRM_API'),
-                'endpoint' => env('CRM_END_POINT_FARMS'),
+                'host' => $host . '.' . SystemFilter::server_tail(),
+                'api' => $api,
+                'endpoint' => $endpoint,
             ])->acceptJson()->post('{+host}/{api}/{endpoint}/', [
-                'token' => Context::get('crm_token'),
+                'token' => Context::getHidden('crm_token'),
             ]);
-
-            Context::forget('crm_token');
 
             // Обрабатываем успешный ответ
             if ($response->successful()) {
@@ -101,7 +108,6 @@ class CrmListFarms
                     $res = DataCompanies::where('company_base_index', $company_base_index)->first();
 
                     if (is_null($res)) {
-                        // Создание новой компании
                         $company_item = [
                             'company_base_index' => $company_base_index,
                             'company_guid'     => Str::uuid()->toString(),
@@ -113,17 +119,15 @@ class CrmListFarms
                         ];
                         $company = DataCompanies::create($company_item);
 
-                        // Создание локации компании
                         $location_item = [
-                            'company_id' => $company->id,
+                            'company_id' => $company->company_id,
                             'region_id' => $item['nobl'],
                             'district_id'=> $item['nrn'],
                         ];
-                        DataCompaniesLocations::created($location_item);
+                        DataCompaniesLocations::create($location_item);
 
                         $count_inset++;
                     } else {
-                        // Обновление существующей компании
                         $res->fill([
                             'company_name_short' => $item['company_name_short'],
                             'company_name_full' => $item['company_name_full'],
@@ -132,8 +136,7 @@ class CrmListFarms
                             'company_kpp'        => $item['company_kpp'],
                         ])->save();
 
-                        // Обновление локации компании
-                        DataCompaniesLocations::where('company_id', $res->id)->update([
+                        DataCompaniesLocations::where('company_id', $res->company_id)->update([
                             'region_id' => $item['nobl'],
                             'district_id' => $item['nrn'],
                         ]);
@@ -144,9 +147,8 @@ class CrmListFarms
                     Log::channel('crm')->warning('У хозяйства нет ИНН или Базового индекса.', $item);
                 }
             }
-
             DB::commit();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             Log::channel('crm')->error('Ошибка при обработке данных компаний.', ['message' => $e->getMessage()]);
         }
