@@ -103,6 +103,7 @@ class CrmListUsers
         $date_start = new DateTime();
         $countInset = 0;
         $countUpdate = 0;
+        $countError = 0;
 
         $roleSlug = 'doctor_company';
         $role = SystemRoles::where('role_slug', $roleSlug)->first();
@@ -117,18 +118,18 @@ class CrmListUsers
 
         Log::channel('crm')->info('Роль ' . $roleSlug . ' найдена.');
 
-        DB::beginTransaction();
-        try {
-            foreach ($request['data'] as $item) {
+        foreach ($request['data'] as $item) {
 
-                $companyBaseIndex = $item['base_index'] ?? null;
-                $userEmail = $item['user_email'] ?? null;
-                $userPassword = isset($item['user_password']) ? base64_decode($item['user_password']) : null;
+            $companyBaseIndex = $item['base_index'] ?? null;
+            $userEmail = $item['user_email'] ?? null;
+            $userPassword = isset($item['user_password']) ? base64_decode($item['user_password']) : null;
 
-                if ($companyBaseIndex && $userEmail && $userPassword) {
-                    $user = SystemUsers::where('user_base_index', $companyBaseIndex)->first();
+            if ($companyBaseIndex && $userEmail && $userPassword) {
+                $user = SystemUsers::where('user_base_index', $companyBaseIndex)->first();
 
-                    if (!$user) {
+                if (!$user) {
+                    try {
+                        DB::beginTransaction(); // Начинаем транзакцию
                         // Создание нового пользователя
                         $user = SystemUsers::create([
                             'user_guid'       => (string)Str::uuid(),
@@ -158,23 +159,25 @@ class CrmListUsers
                             'user_id'   => $user->user_id,
                             'role_slug' => $roleSlug,
                         ]);
-
+                        DB::commit(); // Фиксируем транзакцию
                         $countInset++;
-                    } else {
-                        $countUpdate++;
+                    } catch (Exception $e) {
+                        DB::rollBack(); // Откатываем транзакцию в случае ошибки
+                        Log::channel('crm')->error('Ошибка при попытке создания нового пользователя.', ['message' => $e->getMessage()]);
+                        $countError++;
                     }
+                } else {
+                    $countUpdate++;
                 }
             }
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::channel('crm')->error('Ошибка при обработке создания новых пользователей: ' . $e->getMessage());
-            return false;
         }
+
         $date_end = new DateTime();
         $date_diff = $date_start->diff($date_end)->format("%H:%I:%S:%F");
 
         Log::channel('crm')->info('- Создано новых пользователей: ' . $countInset . '.');
         Log::channel('crm')->info('- Такие пользователи уже есть: ' . $countUpdate . '.');
+        Log::channel('crm')->info('- Ошибки по пользователям: ' . $countError . '.');
         Log::channel('crm')->info('- Время наполнения базы данных: ' . $date_diff);
         return true;
     }

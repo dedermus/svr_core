@@ -1,14 +1,8 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Schedule;
-
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote')->hourly();
-Schedule::command('inspire')->everyTenMinutes()->runInBackground();
-Schedule::command('route:list')->dailyAt('02:00');
-Schedule::command('queue:work --queue=email')->everyMinute();
-Schedule::command('queue:work --queue=crm')->everyMinute();
+//use Illuminate\Support\Facades\Schedule;
+//
+//Schedule::command('queue:work --queue=crm')->everyMinute()->withoutOverlapping()->description('Получение данных из CRM');
+//Schedule::command('queue:work --queue=email')->everyMinute()->withoutOverlapping()->description('Отправка email уведомлений');
+//Schedule::command('queue:monitor')->everyMinute()->description('Монитор очередей');
 
