@@ -2,15 +2,11 @@
 
 namespace Svr\Core\Extensions\Herriot;
 
-use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Http\Client\Response;
 use Svr\Core\Extensions\System\SystemFilter;
-use Svr\Data\Models\DataAnimals;
 use Svr\Data\Models\DataAnimalsCodes;
-use Svr\Data\Models\DataCompanies;
 use Svr\Data\Models\DataCompaniesObjects;
 use Svr\Logs\Models\LogsHerriot;
 

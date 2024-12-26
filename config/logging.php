@@ -23,11 +23,17 @@ return [
             'path' => storage_path('logs/email.log'),
             'level' => 'info', // Уровень логирования
         ],
-        // канал логирования
-        'svr.herriot_directories' => [
-            'driver' => 'single',
-            'path' => storage_path('logs/herriot_directories.log'),
-            'level' => 'info', // Уровень логирования
-        ],
+		// канал логирования
+		'svr.herriot_directories' => [
+			'driver' => 'single',
+			'path' => storage_path('logs/herriot_directories.log'),
+			'level' => 'info', // Уровень логирования
+		],
+		// канал логирования
+		'svr.herriot_companies' => [
+			'driver' => 'single',
+			'path' => storage_path('logs/herriot_companies.log'),
+			'level' => 'info', // Уровень логирования
+		],
     ],
 ];
