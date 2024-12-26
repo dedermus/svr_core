@@ -79,18 +79,15 @@ class ApiNotificationsController extends Controller
 //
 //       // ProcessCrmGetListFarms::dispatch()
 //        ProcessCrmGetToken::dispatch('svr@plinor.ru', 'ZmQ0czNlWXpyMDY2bGQwbg==', );
-//        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
-//        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
-//        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
+        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
+        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
+        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
         //CrmAuth::getToken();
-//        ProcessCrmGetListUsers::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-//        ProcessCrmGetListFarms::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-        //ProcessCrmGetListCountries::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-        //ProcessCrmGetListRegions::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+        ProcessCrmGetListUsers::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+        ProcessCrmGetListFarms::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+        ProcessCrmGetListCountries::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+        ProcessCrmGetListRegions::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
         ProcessCrmGetListDistricts::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-
-
-
 
         return new SvrApiResponseResource($data);
     }
