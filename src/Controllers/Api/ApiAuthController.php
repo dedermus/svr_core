@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Exceptions\CustomException;
+use Svr\Core\Jobs\ProcessHerriotUpdateCompanies;
 use Svr\Core\Jobs\ProcessHerriotUpdateDirectories;
 use Svr\Core\Models\SystemRoles;
 use Svr\Core\Models\SystemSetting;
@@ -40,7 +41,7 @@ class ApiAuthController extends Controller
      */
     public function authInfo(Request $request): SvrApiResponseResource|JsonResponse
     {
-        ProcessHerriotUpdateDirectories::dispatch()->onQueue(env('QUEUE_HERRIOT_DIRECTORIES', 'herriot_directories'));
+        ProcessHerriotUpdateCompanies::dispatch(4)->onQueue(env('QUEUE_HERRIOT_COMPANIES', 'herriot_companies'));
         /*$hh = new ApiHerriot('vukemkuz-240202', 'bQ34tHHq4');
 
         $hh->getCompanyObjectsByGuid("26acc49a-f046-455f-a215-2a18525fc7bc");

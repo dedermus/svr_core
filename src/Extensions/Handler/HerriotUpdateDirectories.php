@@ -230,7 +230,7 @@ class HerriotUpdateDirectories
                     'keeping_type_guid_self' => Str::uuid(),
                     'keeping_type_guid_horriot' => $value['guid'],
                     'keeping_type_name' => $value['name'],
-                    'created_at' => date('d.m.Y H:i:s')
+                    'created_at' => date('Y-m-d H:i:s')
                 ];
                 DB::table(DirectoryKeepingTypes::getTableName())->insert($directory_item);
             }
@@ -241,7 +241,7 @@ class HerriotUpdateDirectories
                     $directory_item = [
                         'keeping_type_uuid_horriot' => $value['uuid'],
                         'keeping_type_name' => $value['name'],
-                        'updated_at' => date('d.m.Y H:i:s')
+                        'updated_at' => date('Y-m-d H:i:s')
                     ];
                     DB::table(DirectoryKeepingTypes::getTableName())->where('keeping_type_id', '=', $item['keeping_type_id'])
                         ->update($directory_item);
@@ -266,7 +266,7 @@ class HerriotUpdateDirectories
                     'specie_guid_self'      => Str::uuid()->toString(),
                     'specie_guid_horriot'   => $value['guid'],
                     'specie_name'           => $value['name'],
-                    'created_at'            => date('d.m.Y H:i:s')
+                    'created_at'            => date('Y-m-d H:i:s')
                 ];
                 //DB::table(DirectoryAnimalsSpecies::getTableName())->insert($directory_item);
                 DirectoryAnimalsSpecies::fill($directory_item)->save();
@@ -278,6 +278,7 @@ class HerriotUpdateDirectories
                     $directory_item = [
                         'specie_uuid_horriot' => $value['uuid'],
                         'specie_name' => $value['name'],
+                        'updated_at' => date('Y-m-d H:i:s')
                     ];
                     DB::table(DirectoryAnimalsSpecies::getTableName())->where('specie_id', '=', $item['specie_id'])
                         ->update($directory_item);
@@ -308,7 +309,7 @@ class HerriotUpdateDirectories
                         'breed_guid_horriot'    => $value['guid'],
                         'breed_uuid_horriot'    => $value['uuid'],
                         'breed_name'            => $value['name'],
-                        'created_at'            => date('d.m.Y H:i:s')
+                        'created_at'            => date('Y-m-d H:i:s')
                     ];
 
                     DB::table(DirectoryAnimalsBreeds::getTableName())->insert($directory_item);
@@ -324,6 +325,7 @@ class HerriotUpdateDirectories
                             'specie_id' => $specie_id['specie_id'],
                             'breed_uuid_horriot' => $value['uuid'],
                             'breed_name' => $value['name'],
+                            'updated_at' => date('Y-m-d H:i:s')
                         ];
 
                         DB::table(DirectoryAnimalsBreeds::getTableName())->where('breed_guid_horriot', '=', $item['breed_guid_horriot'])
@@ -350,7 +352,7 @@ class HerriotUpdateDirectories
                     'keeping_purpose_guid_self'       => Str::uuid(),
                     'keeping_purpose_guid_horriot'    => $value['guid'],
                     'keeping_purpose_name'            => $value['name'],
-                    'created_at'                      => date('d.m.Y H:i:s')
+                    'created_at'                      => date('Y-m-d H:i:s')
                 ];
 
                 DB::table(DirectoryKeepingPurposes::getTableName())->insert($directory_item);
@@ -362,6 +364,7 @@ class HerriotUpdateDirectories
                     $directory_item = [
                         'keeping_purpose_uuid_horriot' => $value['uuid'],
                         'keeping_purpose_name' => $value['name'],
+                        'updated_at' => date('Y-m-d H:i:s')
                     ];
 
                     DB::table(DirectoryKeepingPurposes::getTableName())->where('keeping_purpose_id', '=', $item['keeping_purpose_id'])
@@ -386,7 +389,7 @@ class HerriotUpdateDirectories
                     'tool_location_guid_self'       => Str::uuid(),
                     'tool_location_guid_horriot'    => $value['guid'],
                     'tool_location_name'            => $value['name'],
-                    'created_at'                    => date('d.m.Y H:i:s')
+                    'created_at'                    => date('Y-m-d H:i:s')
                 ];
 
                 DB::table(DirectoryToolsLocations::getTableName())->insert($directory_item);
@@ -398,6 +401,7 @@ class HerriotUpdateDirectories
                     $directory_item = [
                         'tool_location_uuid_horriot' => $value['uuid'],
                         'tool_location_name' => $value['name'],
+                        'updated_at' => date('Y-m-d H:i:s')
                     ];
 
                     DB::table(DirectoryKeepingPurposes::getTableName())->where('tool_location_id', '=', $item['tool_location_id'])
@@ -427,7 +431,7 @@ class HerriotUpdateDirectories
                     'country_name_eng'      => $value['englishName'],
                     'country_kod'           => $value['code'],
                     'country_kod3'          => $value['code3'],
-                    'created_at'            => date('d.m.Y H:i:s')
+                    'created_at'            => date('Y-m-d H:i:s')
                 ];
 
                 DB::table(DirectoryCountries::getTableName())->insert($directory_item);
@@ -443,6 +447,7 @@ class HerriotUpdateDirectories
                         'country_name_eng' => $value['englishName'],
                         'country_kod' => $value['code'],
                         'country_kod3' => $value['code3'],
+                        'updated_at' => date('Y-m-d H:i:s')
                     ];
 
                     DB::table(DirectoryCountries::getTableName())->where('country_id', '=', $item['country_id'])
