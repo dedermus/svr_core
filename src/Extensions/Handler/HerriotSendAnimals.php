@@ -5,82 +5,137 @@ namespace Svr\Core\Extensions\Handler;
 use Illuminate\Support\Facades\Log;
 use Svr\Core\Extensions\Herriot\ApiHerriot;
 use Svr\Core\Models\SystemUsersNotifications;
-use Svr\Data\Models\DataCompanies;
+use Svr\Data\Models\DataApplications;
+use Svr\Data\Models\DataAnimals;
+use Svr\Data\Models\DataApplicationsAnimals;
+use Svr\Logs\Models\LogsHerriot;
 
 class HerriotSendAnimals
 {
-	//Определение namespaces в SOAP - ответе от API
-	private static string $directory_namespace_data            = 'http://api.vetrf.ru/schema/cdm/dictionary/v2';
-	private static string $directory_namespace_properties      = 'http://api.vetrf.ru/schema/cdm/base';
-
-
-	public static function sendAnimal($animal_id)
+	public static function sendAnimal($application_animal_id)
 	{
-		$herriot_user			= env('HERRIOT_USER', false);
-		$herriot_password		= env('HERRIOT_PASSWORD', false);
+		$application_animal_data						= DataApplicationsAnimals::find($application_animal_id);
 
-		if (!$herriot_user || !$herriot_password)
+		if(empty($application_animal_data))
 		{
-			Log::channel('herriot_companies')->warning('Обновление компаний. Не заданы логин или пароль от хорриота.');
-			(new SystemUsersNotifications)->notificationsSendAdmin('Обновление компаний из Хорриот. Не заданы логин или пароль от хорриота. (HerriotUpdateCompanies.php)');
+			return false;
+		}
+
+		$application_data								= DataApplications::find($application_animal_data['application_id']);
+		$animal_data									= DataAnimals::animalData($application_animal_data['animal_id'], $application_animal_data['application_id']);
+
+		if (
+			empty($animal_data['user_herriot_login']) ||
+			empty($animal_data['user_herriot_password']) ||
+			empty($animal_data['user_herriot_web_login']) ||
+			empty($animal_data['user_herriot_apikey']) ||
+			empty($animal_data['user_herriot_issuerid']) ||
+			empty($animal_data['user_herriot_serviceid'])
+		)
+		{
+			Log::channel('herriot_companies')->warning('Отправка животного на регистрацию. Не заданы реквизиты хорриот пользователя.');
+			(new SystemUsersNotifications)->notificationsSendAdmin('Отправка животного на регистрацию. Не заданы логин или пароль хорриота пользователя. (HerriotSetAnimals.php)');
 			return false;
 		}
 
 		//Экземпляр класса работы с API Хорриот
-		$api					= new ApiHerriot($herriot_user, $herriot_password);
-		$company_data			= DataCompanies::find($company_id);
+		$api					= new ApiHerriot($animal_data['user_herriot_login'], $animal_data['user_herriot_password']);
 
-		if(empty($company_data))
+		$application_data->update([
+			'application_date_horriot' => date('Y-m-d H:i:s')
+		]);
+
+		$application_animal_data->update([
+			'application_animal_date_horriot'			=> date('Y-m-d H:i:s'),
+			'application_animal_date_last_update'		=> date('Y-m-d H:i:s')
+		]);
+
+		$response_from_herriot	= $api->sendAnimal(
+			$application_animal_data,
+			$application_animal_data['user_herriot_web_login'],
+			$application_animal_data['user_herriot_apikey'],
+			$application_animal_data['user_herriot_issuerid'],
+			$application_animal_data['user_herriot_serviceid']
+		);
+
+		$animal_send_log_data	= LogsHerriot::where('application_animal_id', '=', $application_animal_data['application_animal_id'])->first();
+
+		if(empty($animal_send_log_data))
 		{
 			return false;
 		}
 
-		$company_data->update(['updated_at' => date('Y-m-d H:i:s')]);
+		//сохраняем ответ от Хорриот
+		$animal_send_log_data->update(['application_response_herriot' => $response_from_herriot]);
 
-		$horriot_data = $api->getDirectoryOrganizationByInn($company_data['company_inn']);
-
-		if($horriot_data === false || (is_array($horriot_data) && isset($horriot_data['error'])))
+		if($response_from_herriot === false)
 		{
-			Log::channel('herriot_companies')->warning('Пришел HTML вместо XML (видимо косяк авторизации).', [$horriot_data]);
-			(new SystemUsersNotifications)->notificationsSendAdmin('Пришел HTML вместо XML (видимо косяк авторизации). (HerriotUpdateCompanies.php)');
+			//сохраняем ответ от Хорриот
+			// TODO: нагуглить и изменить вставку текста ошибки запроса из Гузла
+			$animal_send_log_data->update(['application_response_herriot' => $api->request_error()]);
+			$application_animal_data->update(['application_animal_status' => 'rejected']);
+
+			Log::channel('herriot_companies')->warning('Отправка животного на регистрацию в Хорриот. Ничего не пришло из Хорриот. Животное '.$application_animal_data['animal_id'].'.');
+			(new SystemUsersNotifications)->notificationsSendAdmin('Отправка животного на регистрацию в Хорриот. Ничего не пришло из Хорриот. Животное '.$application_animal_data['animal_id'].'. (HerriotSetAnimals.php)');
 			return false;
 		}
 
-		$directory_xml = simplexml_load_string($horriot_data);
+		$error_data = $api->errorParser($response_from_herriot);
 
-		if($directory_xml === false)
+		if ($error_data['error_status'] === true)
 		{
-			Log::channel('herriot_companies')->warning('Обновление компаний из Хорриот. Не удалось распарсить ответ из Хорриот.', [$horriot_data]);
-			(new SystemUsersNotifications)->notificationsSendAdmin('Обновление компаний из Хорриот. Не удалось распарсить ответ из Хорриот. (HerriotUpdateCompanies.php)');
+			$application_animal_data->update([
+				'application_herriot_send_text_error'	=> $error_data['error_message'],
+				'application_animal_status'				=> 'rejected'
+			]);
+
 			return false;
 		}
 
-		$directory_path = $directory_xml->xpath("//soap:Body/*")[0];
-		$directory_data = $directory_path->children("http://api.vetrf.ru/schema/cdm/dictionary/v2");
+		$registration_response_xml						= simplexml_load_string($response_from_herriot);
 
-		$item = $directory_data->businessEntityList->businessEntity;
-
-		if(!isset($item[0]))
+		if ($registration_response_xml === false)
 		{
-			$company_data->update(['company_status' => 'disabled']);
+			$application_animal_data->update([
+				'application_animal_status' => 'rejected'
+			]);
+
+			Log::channel('herriot_companies')->warning('Отправка животного на регистрацию в Хорриот. Пришла ошибка из Хорриот. Животное '.$application_animal_data['animal_id'].'.');
+			(new SystemUsersNotifications)->notificationsSendAdmin('Отправка животного на регистрацию в Хорриот. Пришла ошибка из Хорриот. Животное '.$application_animal_data['animal_id'].'. (HerriotSetAnimals.php)');
+			return false;
 		}
 
-		// костыль для похожих ИНН компаний разной блины
-		foreach($directory_data->businessEntityList->businessEntity as $item)
-		{
-			$item_properties		= $item->children(self::$directory_namespace_properties);
-			$item_data				= $item->children(self::$directory_namespace_data);
-			$guid					= (string)$item_properties->guid;
-			$item_inn				= (string)$item_properties->inn;
+		$registration_response_path						= $registration_response_xml->xpath("//soap:Body/*")[0];
 
-			if($item_inn == $company_data['company_inn'])
-			{
-				break;
-			}
+		if (!isset($registration_response_path->application->status) || $registration_response_path->application->status != 'ACCEPTED')
+		{
+			Log::channel('herriot_companies')->warning('Статуса ваще нет, толи он не accepted. Животное '.$application_animal_data['animal_id'].'.');
+
+			$application_animal_data->update([
+				'application_animal_status'				 => 'rejected'
+			]);
+
+			return false;
 		}
 
-		$company_data->update(['company_guid_vetis' => $guid, 'company_status' => 'enabled', 'company_status_horriot' => 'enabled']);
+		if (!isset($registration_response_path->application->applicationId))
+		{
+			Log::channel('herriot_companies')->warning('applicationId нет. Животное '.$application_animal_data['animal_id'].'.');
 
-		// TODO: изобрести метод, который вытащит из базы компанию с нужным статусом и согласно сортировке и поставит ее в очередь
+			$application_animal_data->update([
+				'application_animal_status' 			=> 'rejected'
+			]);
+
+			return false;
+		}
+
+		$applicationId = $registration_response_path->application->applicationId;
+
+		$application_animal_data->update([
+			'application_animal_status'					=> 'sent',
+			'application_herriot_application_id'		=> $applicationId
+		]);
+
+		// TODO: изобрести метод, который вытащит из базы компанию с нужным статусом и согласно сортировке и поставит ее в очередь? или нет???
 	}
 }
