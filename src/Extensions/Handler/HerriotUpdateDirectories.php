@@ -268,8 +268,7 @@ class HerriotUpdateDirectories
                     'specie_name'           => $value['name'],
                     'created_at'            => date('Y-m-d H:i:s')
                 ];
-                //DB::table(DirectoryAnimalsSpecies::getTableName())->insert($directory_item);
-                DirectoryAnimalsSpecies::fill($directory_item)->save();
+                DB::table(DirectoryAnimalsSpecies::getTableName())->insert($directory_item);
             }
             else
             {

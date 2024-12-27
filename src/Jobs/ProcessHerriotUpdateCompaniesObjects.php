@@ -4,10 +4,10 @@ namespace Svr\Core\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Svr\Core\Extensions\Handler\HerriotUpdateCompanies;
+use Svr\Core\Extensions\Handler\HerriotUpdateCompaniesObjects;
 
-//class ProcessHerriotUpdateCompanies implements ShouldQueue
-class ProcessHerriotUpdateCompanies
+//class ProcessHerriotUpdateCompaniesObjects implements ShouldQueue
+class ProcessHerriotUpdateCompaniesObjects
 {
     use Queueable;
 	protected string $company_id;        // ID компании
@@ -24,8 +24,8 @@ class ProcessHerriotUpdateCompanies
      * Execute the job.
      *
     */
-    public function handle(): void
+    public function handle()
     {
-        HerriotUpdateCompanies::getCompanies($this->company_id);
+        HerriotUpdateCompaniesObjects::getCompanyObjects($this->company_id);
     }
 }

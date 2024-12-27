@@ -162,6 +162,17 @@ class CoreServiceProvider extends ServiceProvider
 			]
 		);
 
+        /** Добавим файл лога для очереди herriot_companies_objects */
+        config(
+            [
+                'logging.channels.herriot_companies_objects' => [
+                    'driver' => 'single',
+                    'path' => storage_path('logs/herriot_companies_objects.log'),
+                    'level' => 'info', // Уровень логирования
+                ],
+            ]
+        );
+
         /** Добавим в конфиг файл config/app.php ключ 'api_prefix' равный значению ключа API_PREFIX из окружения (.env)
          * @example Получить значение: config('svr.api_prefix') config('svr.api_prefix')
          */

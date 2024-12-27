@@ -4,10 +4,10 @@ namespace Svr\Core\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Svr\Core\Extensions\Handler\HerriotUpdateCompanies;
+use Svr\Core\Extensions\Handler\HerriotSendAnimals;
 
-//class ProcessHerriotUpdateCompanies implements ShouldQueue
-class ProcessHerriotUpdateCompanies
+//class ProcessHerriotSendAnimals implements ShouldQueue
+class ProcessHerriotSendAnimals
 {
     use Queueable;
 	protected string $company_id;        // ID компании
@@ -26,6 +26,6 @@ class ProcessHerriotUpdateCompanies
     */
     public function handle(): void
     {
-        HerriotUpdateCompanies::getCompanies($this->company_id);
+        HerriotSendAnimals::sendAnimal($this->animal_id);
     }
 }
