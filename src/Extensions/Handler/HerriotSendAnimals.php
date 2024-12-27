@@ -33,7 +33,7 @@ class HerriotSendAnimals
 			empty($animal_data['user_herriot_serviceid'])
 		)
 		{
-			Log::channel('herriot_companies')->warning('Отправка животного на регистрацию. Не заданы реквизиты хорриот пользователя.');
+			Log::channel('herriot_animals_send')->warning('Отправка животного на регистрацию. Не заданы реквизиты хорриот пользователя.');
 			(new SystemUsersNotifications)->notificationsSendAdmin('Отправка животного на регистрацию. Не заданы логин или пароль хорриота пользователя. (HerriotSetAnimals.php)');
 			return false;
 		}
@@ -75,7 +75,7 @@ class HerriotSendAnimals
 			$animal_send_log_data->update(['application_response_herriot' => $api->request_error()]);
 			$application_animal_data->update(['application_animal_status' => 'rejected']);
 
-			Log::channel('herriot_companies')->warning('Отправка животного на регистрацию в Хорриот. Ничего не пришло из Хорриот. Животное '.$application_animal_data['animal_id'].'.');
+			Log::channel('herriot_animals_send')->warning('Отправка животного на регистрацию в Хорриот. Ничего не пришло из Хорриот. Животное '.$application_animal_data['animal_id'].'.');
 			(new SystemUsersNotifications)->notificationsSendAdmin('Отправка животного на регистрацию в Хорриот. Ничего не пришло из Хорриот. Животное '.$application_animal_data['animal_id'].'. (HerriotSetAnimals.php)');
 			return false;
 		}
@@ -100,7 +100,7 @@ class HerriotSendAnimals
 				'application_animal_status' => 'rejected'
 			]);
 
-			Log::channel('herriot_companies')->warning('Отправка животного на регистрацию в Хорриот. Пришла ошибка из Хорриот. Животное '.$application_animal_data['animal_id'].'.');
+			Log::channel('herriot_animals_send')->warning('Отправка животного на регистрацию в Хорриот. Пришла ошибка из Хорриот. Животное '.$application_animal_data['animal_id'].'.');
 			(new SystemUsersNotifications)->notificationsSendAdmin('Отправка животного на регистрацию в Хорриот. Пришла ошибка из Хорриот. Животное '.$application_animal_data['animal_id'].'. (HerriotSetAnimals.php)');
 			return false;
 		}
@@ -109,7 +109,7 @@ class HerriotSendAnimals
 
 		if (!isset($registration_response_path->application->status) || $registration_response_path->application->status != 'ACCEPTED')
 		{
-			Log::channel('herriot_companies')->warning('Статуса ваще нет, толи он не accepted. Животное '.$application_animal_data['animal_id'].'.');
+			Log::channel('herriot_animals_send')->warning('Статуса ваще нет, толи он не accepted. Животное '.$application_animal_data['animal_id'].'.');
 
 			$application_animal_data->update([
 				'application_animal_status'				 => 'rejected'
@@ -120,7 +120,7 @@ class HerriotSendAnimals
 
 		if (!isset($registration_response_path->application->applicationId))
 		{
-			Log::channel('herriot_companies')->warning('applicationId нет. Животное '.$application_animal_data['animal_id'].'.');
+			Log::channel('herriot_animals_send')->warning('applicationId нет. Животное '.$application_animal_data['animal_id'].'.');
 
 			$application_animal_data->update([
 				'application_animal_status' 			=> 'rejected'
