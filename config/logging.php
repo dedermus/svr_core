@@ -47,5 +47,11 @@ return [
             'path' => storage_path('logs/herriot_animals_send.log'),
             'level' => 'info', // Уровень логирования
         ],
+        // канал логирования
+        'svr.herriot_animals_check' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/herriot_animals_check.log'),
+            'level' => 'info', // Уровень логирования
+        ],
     ],
 ];
