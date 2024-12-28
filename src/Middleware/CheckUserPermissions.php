@@ -52,16 +52,16 @@ class CheckUserPermissions
      * Получить данные токена из базы данных.
      *
      * @param string $token
-     * @return array|null
+     *
+     * @return mixed
      */
-    private function getTokenData(string $token): ?array
+    private function getTokenData(string $token): mixed
     {
         return SystemUsersToken::where([
             ['token_value', '=', $token],
             ['token_status', '=', SystemStatusEnum::ENABLED->value],
         ])->whereNotNull('participation_id')
-            ->first()
-            ->toArray();
+            ->first();
     }
 
     /**
