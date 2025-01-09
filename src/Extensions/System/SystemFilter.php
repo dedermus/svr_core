@@ -171,4 +171,25 @@ class SystemFilter
             default => 'local',
         };
     }
+
+
+	/**
+	 * Проверка на число
+	 * @param $value
+	 * @return false|mixed
+	 */
+	public static function is_num($value)
+	{
+		if(!is_array($value))
+		{
+			if(preg_match("/^[0-9]+$/", $value))
+			{
+				return $value;
+			}else{
+				return false;
+			}
+		}else{
+			return false;
+		}
+	}
 }
