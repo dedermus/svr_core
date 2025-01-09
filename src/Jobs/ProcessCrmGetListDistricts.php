@@ -4,9 +4,9 @@ namespace Svr\Core\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Svr\Core\Extensions\Handler\CrmListFarms;
+use Svr\Core\Extensions\Handler\CrmListDistricts;
 
-class ProcessCrmGetListFarms implements ShouldQueue
+class ProcessCrmGetListDistricts implements ShouldQueue
 {
     use Queueable;
 
@@ -23,6 +23,6 @@ class ProcessCrmGetListFarms implements ShouldQueue
     */
     public function handle(): void
     {
-        CrmListFarms::getListFarms();
+        CrmListDistricts::getListDistricts();
     }
 }

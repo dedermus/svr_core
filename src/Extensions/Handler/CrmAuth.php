@@ -22,11 +22,11 @@ class CrmAuth
         $email = env('CRM_USERNAME', '');
         $password = env('CRM_PASSWORD', '');
         $host = env('CRM_HOST', '');
-        $api = env('CRM_API', '');
-        $endpoint = env('CRM_END_POINT_TOKEN', '');
+        $api = 'allApi';
+        $endpoint = 'getToken';
 
         // Проверка наличия необходимых параметров
-        if (empty($email) || empty($password) || empty($host) || empty($api) || empty($endpoint)) {
+        if (empty($email) || empty($password) || empty($host)) {
             Log::channel('crm')->error('Не все параметры окружения установлены для получения токена.');
             return false;
         }
@@ -74,5 +74,6 @@ class CrmAuth
             ]);
         }
 
-        return false;    }
+        return false;
+    }
 }
