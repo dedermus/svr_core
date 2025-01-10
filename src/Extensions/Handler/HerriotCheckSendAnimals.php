@@ -4,6 +4,7 @@ namespace Svr\Core\Extensions\Handler;
 
 use Illuminate\Support\Facades\Log;
 use Svr\Core\Extensions\Herriot\ApiHerriot;
+use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersNotifications;
 use Svr\Data\Models\DataAnimals;
 use Svr\Data\Models\DataApplications;
@@ -24,13 +25,15 @@ class HerriotCheckSendAnimals
 
 		$animal_data									= DataAnimals::animalData($application_animal_data['animal_id'], $application_animal_data['application_id']);
 
+        $doctor_data                                    = SystemUsers::find($animal_data['doctor_id']);
+
 		if (
-			empty($animal_data['user_herriot_login']) ||
-			empty($animal_data['user_herriot_password']) ||
-			empty($animal_data['user_herriot_web_login']) ||
-			empty($animal_data['user_herriot_apikey']) ||
-			empty($animal_data['user_herriot_issuerid']) ||
-			empty($animal_data['user_herriot_serviceid'])
+			empty($doctor_data['user_herriot_login']) ||
+			empty($doctor_data['user_herriot_password']) ||
+			empty($doctor_data['user_herriot_web_login']) ||
+			empty($doctor_data['user_herriot_apikey']) ||
+			empty($doctor_data['user_herriot_issuerid']) ||
+			empty($doctor_data['user_herriot_serviceid'])
 		)
 		{
 			Log::channel('herriot_animals_check')->warning('Отправка животного на регистрацию. Не заданы реквизиты хорриот пользователя.');
@@ -39,7 +42,7 @@ class HerriotCheckSendAnimals
 		}
 
 		//Экземпляр класса работы с API Хорриот
-		$api							= new ApiHerriot($animal_data['user_herriot_login'], $animal_data['user_herriot_password']);
+		$api							= new ApiHerriot($doctor_data['user_herriot_login'], $doctor_data['user_herriot_password']);
 		$animal_send_log_data			= LogsHerriot::where('application_animal_id', '=', $application_animal_data['application_animal_id'])->first();
 
 		if(empty($animal_send_log_data))
@@ -47,9 +50,9 @@ class HerriotCheckSendAnimals
 			return false;
 		}
 
-		$response_from_herriot 			= $api->checkSendAnimall($animal_data['application_herriot_application_id'],
-			$animal_data['user_herriot_apikey'],
-			$animal_data['user_herriot_issuerid'],
+		$response_from_herriot 			= $api->checkSendAnimal($animal_data['application_herriot_application_id'],
+			$doctor_data['user_herriot_apikey'],
+			$doctor_data['user_herriot_issuerid'],
 			$animal_data['application_animal_id']);
 
 		$application_animal_data->update([
@@ -61,13 +64,12 @@ class HerriotCheckSendAnimals
 			'application_response_application_herriot' => $response_from_herriot
 		]);
 
-		if ($response_from_herriot === false)
+		if ($response_from_herriot === false && $api->http_code() === false)
 		{
 			$application_animal_data->update([
 				'application_animal_status'		=> 'rejected'
 			]);
 
-			// TODO: нагуглить и изменить вставку текста ошибки запроса из Гузла
 			$animal_send_log_data->update([
 				'application_response_application_herriot' => $api->request_error()
 			]);
@@ -76,6 +78,10 @@ class HerriotCheckSendAnimals
 			(new SystemUsersNotifications)->notificationsSendAdmin('Проверка статуса регистрации животного в Хорриот. Ничего не пришло из Хорриот. Животное '.$animal_data['animal_id'].' (HerriotSetAnimals.php)');
 			return false;
 		}
+        if($response_from_herriot === false && $api->http_code() !== false)
+        {
+            $response_from_herriot = $api->request_error();
+        }
 
 		$error_data								= $api->errorParser($response_from_herriot);
 

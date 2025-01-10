@@ -10,14 +10,14 @@ use Svr\Core\Extensions\Handler\HerriotSendAnimals;
 class ProcessHerriotSendAnimals
 {
     use Queueable;
-	protected string $company_id;        // ID компании
+	protected string $application_animal_id;        // ID животного в заявке
 
 	/**
 	 * Create a new job instance.
 	 */
-	public function __construct($company_id)
+	public function __construct($application_animal_id)
 	{
-		$this->company_id = $company_id;
+		$this->application_animal_id = $application_animal_id;
 	}
 
     /**
@@ -26,6 +26,6 @@ class ProcessHerriotSendAnimals
     */
     public function handle(): void
     {
-        HerriotSendAnimals::sendAnimal($this->animal_id);
+        HerriotSendAnimals::sendAnimal($this->application_animal_id);
     }
 }

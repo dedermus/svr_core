@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Hash;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Exceptions\CustomException;
+use Svr\Core\Jobs\ProcessHerriotCheckSendAnimals;
+use Svr\Core\Jobs\ProcessHerriotSendAnimals;
 use Svr\Core\Jobs\ProcessHerriotUpdateCompanies;
 use Svr\Core\Jobs\ProcessHerriotUpdateCompaniesObjects;
 use Svr\Core\Jobs\ProcessHerriotUpdateDirectories;
@@ -43,7 +45,9 @@ class ApiAuthController extends Controller
     public function authInfo(Request $request): SvrApiResponseResource|JsonResponse
     {
         //ProcessHerriotUpdateCompanies::dispatch(4)->onQueue(env('QUEUE_HERRIOT_COMPANIES', 'herriot_companies'));
-        ProcessHerriotUpdateCompaniesObjects::dispatch(4)->onQueue(env('QUEUE_HERRIOT_COMPANIES_OBJECTS', 'herriot_companies_objects'));
+        //ProcessHerriotUpdateCompaniesObjects::dispatch(4)->onQueue(env('QUEUE_HERRIOT_COMPANIES_OBJECTS', 'herriot_companies_objects'));
+        //ProcessHerriotSendAnimals::dispatch(1427)->onQueue(env('QUEUE_HERRIOT_SEND_ANIMALS', 'herriot_send_animals'));
+        //ProcessHerriotCheckSendAnimals::dispatch(1427)->onQueue(env('QUEUE_HERRIOT_SEND_ANIMALS', 'herriot_send_animals'));
         /*$hh = new ApiHerriot('vukemkuz-240202', 'bQ34tHHq4');
 
         $hh->getCompanyObjectsByGuid("26acc49a-f046-455f-a215-2a18525fc7bc");

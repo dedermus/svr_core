@@ -20,9 +20,46 @@ use Svr\Logs\Models\LogsHerriot;
  */
 class ApiHerriot
 {
+    /**
+     * @var string адрес продового хорриота
+     */
 	private string $api_url_domain_prod = 'https://api.vetrf.ru';
-	private string $api_url_domain_test = 'https://api2.vetrf.ru:8002';
+    /**
+     * @var string адрес тестового хорриота
+     */
+    private string $api_url_domain_test = 'https://api2.vetrf.ru:8002';
+    /**
+     * @var string|bool подготовленный адрес хорриота
+     */
 	private $api_url_domain = false;
+
+    /**
+     * @var string|bool ошибка запроса
+     */
+    private $request_error = false;
+
+    /**
+     * @return int|bool http код ответа
+     */
+    private $http_code = false;
+
+    /**
+     * Получить текст ошибки запроса
+     * @return bool|string
+     */
+    public function request_error(): bool|string
+    {
+        return $this->request_error;
+    }
+
+    /**
+     * Получить код ошибки запроса
+     * @return bool|int
+     */
+    public function http_code()
+    {
+        return $this->http_code;
+    }
 
     /**
      * Основной URL API
@@ -79,12 +116,15 @@ class ApiHerriot
 
     /**
      * Отправляем запрос
-     * @throws ConnectionException
      */
-    public function requestSend($url): string
+    public function requestSend($url): string|bool
     {
-        // Basic HTTP-аутентификация...
-        $response = Http::withBasicAuth($this->request_auth_login, $this->request_auth_password)->withBody($this->request_data)->post($url);
+        try {
+            $response = Http::withBasicAuth($this->request_auth_login, $this->request_auth_password)->withBody($this->request_data)->post($url);
+        } catch (\Exception $e) {
+            $this->request_error = $e->getMessage();
+            return false;
+        }
 
         if ($response->status() == 200)
         {
@@ -92,6 +132,8 @@ class ApiHerriot
         }
         else
         {
+            $this->request_error = $response->body();
+            $this->http_code = $response->status();
             return false;
         }
     }
@@ -296,6 +338,7 @@ class ApiHerriot
 		{
 			foreach ($animal_mark_data as $mark)
 			{
+                $mark = (array)$mark;
 				if (!empty(trim($mark['code_tool_type_id'])) && !empty(trim($mark['code_tool_date_set'])))
 				{
 					$request_raw_data .='
@@ -360,7 +403,7 @@ class ApiHerriot
 
 		$this->requestRawData($request_raw_data);
 
-        return $this->requestSend($this->api_url_domain.$this->api_url_list['register_animal']);
+        return $this->requestSend($this->api_url_domain.$this->api_url_list['register_animal'].'ddddd');
 	}
 
     /**
@@ -470,7 +513,7 @@ class ApiHerriot
 
 		$method_name		= 'error_'.$error_type.'_'.$error_code;
 
-		if(method_exists('ApiHorriot', $method_name))
+		if(method_exists(__CLASS__, $method_name))
 		{
 			return self::{$method_name}($error_data);
 		}
