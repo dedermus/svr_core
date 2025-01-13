@@ -16,6 +16,7 @@ use Svr\Core\Jobs\ProcessCrmGetListDistricts;
 use Svr\Core\Jobs\ProcessCrmGetListFarms;
 use Svr\Core\Jobs\ProcessCrmGetListRegions;
 use Svr\Core\Jobs\ProcessCrmGetListUsers;
+use Svr\Core\Jobs\ProcessImportMilk;
 use Svr\Core\Jobs\ProcessSendingEmail;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersNotifications;
@@ -87,7 +88,9 @@ class ApiNotificationsController extends Controller
 //        ProcessCrmGetListFarms::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
         //ProcessCrmGetListCountries::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
         //ProcessCrmGetListRegions::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-        ProcessCrmGetListDistricts::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+       // ProcessCrmGetListDistricts::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+        //ProcessImportMilk::dispatch()->onQueue(env('QUEUE_IMPORT', 'import'));
+        ProcessImportMilk::dispatch();
 
 
 

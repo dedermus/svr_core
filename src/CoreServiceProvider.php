@@ -133,12 +133,23 @@ class CoreServiceProvider extends ServiceProvider
             ]
         );
 
-        /** Добавим провайдер для очереди email */
+        /** Добавим провайдер для очереди crm */
         config(
             [
                 'logging.channels.crm' => [
                     'driver' => 'single',
                     'path' => storage_path('logs/crm.log'),
+                    'level' => 'info', // Уровень логирования
+                ],
+            ]
+        );
+
+        /** Добавим провайдер для очереди import */
+        config(
+            [
+                'logging.channels.import' => [
+                    'driver' => 'single',
+                    'path' => storage_path('logs/import.log'),
                     'level' => 'info', // Уровень логирования
                 ],
             ]
