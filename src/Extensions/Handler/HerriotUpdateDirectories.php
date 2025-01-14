@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Svr\Core\Extensions\Herriot\ApiHerriot;
+use Svr\Core\Jobs\ProcessHerriotUpdateDirectories;
 use Svr\Core\Models\SystemUsersNotifications;
 use Svr\Directories\Models\DirectoryAnimalsBreeds;
 use Svr\Directories\Models\DirectoryAnimalsSpecies;
@@ -90,6 +91,14 @@ class HerriotUpdateDirectories
             'method_save'                                   => 'saveCountries',
         ]
     ];
+
+    /**
+     * Метод обновления справочников в очередь
+     */
+    public static function addUpdateDirectoriesQueue()
+    {
+        ProcessHerriotUpdateDirectories::dispatch()->onQueue(env('QUEUE_HERRIOT_DIRECTORIES', 'herriot_directories'));
+    }
 
     /**
      * Идем в Хорриот получать справочники

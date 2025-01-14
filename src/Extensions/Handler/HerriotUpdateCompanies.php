@@ -2,8 +2,12 @@
 
 namespace Svr\Core\Extensions\Handler;
 
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Extensions\Herriot\ApiHerriot;
+use Svr\Core\Jobs\ProcessHerriotUpdateCompanies;
 use Svr\Core\Models\SystemUsersNotifications;
 use Svr\Data\Models\DataCompanies;
 
@@ -13,6 +17,36 @@ class HerriotUpdateCompanies
 	private static string $directory_namespace_data            = 'http://api.vetrf.ru/schema/cdm/dictionary/v2';
 	private static string $directory_namespace_properties      = 'http://api.vetrf.ru/schema/cdm/base';
 
+    /**
+     * Метод добавления компаний в очередь на обновление
+     * @return bool
+     */
+    public static function addCompanyQueue()
+    {
+        Log::channel('herriot_companies')->info('Запустили метод добавления организации в очередь на обновление.');
+
+        $company = DB::table(DataCompanies::getTableName())->whereNotNull('company_inn')
+            ->where('company_status', '=', SystemStatusEnum::ENABLED->value)
+            ->orWhere(function (Builder $query) {
+                $query->where('company_status', '=', SystemStatusEnum::DISABLED->value)
+                    ->where('company_status_horriot', '=', SystemStatusEnum::DISABLED->value);
+            })
+            ->orderBy('updated_at', 'asc')
+            ->first();
+
+        if($company)
+        {
+            Log::channel('herriot_companies')->info('Пробуем добавить в очередь компанию: '.($company->company_id));
+
+            ProcessHerriotUpdateCompanies::dispatch($company->company_id)->onQueue(env('QUEUE_HERRIOT_COMPANIES', 'herriot_companies'));
+
+            return true;
+        }else{
+            Log::channel('herriot_companies')->info('Компаний для обновления нет.');
+
+            return false;
+        }
+    }
 
 	public static function getCompanies($company_id)
 	{
@@ -63,6 +97,9 @@ class HerriotUpdateCompanies
 		if(!isset($item[0]))
 		{
 			$company_data->update(['company_status' => 'disabled']);
+            Log::channel('herriot_companies')->warning('Обновление компаний из Хорриот. Пустой businessEntity из Хорриот.', [$horriot_data]);
+
+            return false;
 		}
 
 		// костыль для похожих ИНН компаний разной блины
@@ -80,7 +117,5 @@ class HerriotUpdateCompanies
 		}
 
 		$company_data->update(['company_guid_vetis' => $guid, 'company_status' => 'enabled', 'company_status_horriot' => 'enabled']);
-
-		// TODO: изобрести метод, который вытащит из базы компанию с нужным статусом и согласно сортировке и поставит ее в очередь
 	}
 }

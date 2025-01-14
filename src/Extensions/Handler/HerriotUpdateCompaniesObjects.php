@@ -2,9 +2,13 @@
 
 namespace Svr\Core\Extensions\Handler;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Svr\Core\Enums\SystemStatusEnum;
 use Svr\Core\Extensions\Herriot\ApiHerriot;
+use Svr\Core\Jobs\ProcessHerriotUpdateCompanies;
+use Svr\Core\Jobs\ProcessHerriotUpdateCompaniesObjects;
 use Svr\Core\Models\SystemUsersNotifications;
 use Svr\Data\Models\DataCompanies;
 use Svr\Data\Models\DataCompaniesObjects;
@@ -17,6 +21,35 @@ class HerriotUpdateCompaniesObjects
     //Определение namespaces в SOAP - ответе от API
     private static string $directory_namespace_data            = 'http://api.vetrf.ru/schema/cdm/dictionary/v2';
     private static string $directory_namespace_properties      = 'http://api.vetrf.ru/schema/cdm/base';
+
+    /**
+     * Метод добавления компаний в очередь на обновление
+     * @return bool
+     */
+    public static function addCompanyObjectsQueue()
+    {
+        Log::channel('herriot_companies_objects')->info('Запустили метод добавления организации в очередь на обновление.');
+
+        $company = DataCompanies::whereNotNull('company_guid_vetis')
+            ->where('company_status', '=', SystemStatusEnum::ENABLED->value)
+            ->orderBy('company_objects_offset', 'desc')
+            ->orderBy('company_date_update_objects', 'asc')
+            ->orderBy('updated_at', 'asc')
+            ->first();
+
+        if($company)
+        {
+            Log::channel('herriot_companies_objects')->info('Пробуем добавить в очередь компанию: '.($company['company_id']));
+
+            ProcessHerriotUpdateCompaniesObjects::dispatch($company['company_id'])->onQueue(env('QUEUE_HERRIOT_COMPANIES_OBJECTS', 'herriot_companies_objects'));
+
+            return true;
+        }else{
+            Log::channel('herriot_companies_objects')->info('Компаний для обновления нет.');
+
+            return false;
+        }
+    }
 
     public static function getCompanyObjects($company_id)
     {
