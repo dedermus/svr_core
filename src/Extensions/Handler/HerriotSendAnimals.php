@@ -12,24 +12,55 @@ use Svr\Data\Models\DataAnimals;
 use Svr\Data\Models\DataApplicationsAnimals;
 use Svr\Logs\Models\LogsHerriot;
 
+use Svr\Core\Jobs\ProcessHerriotSendAnimals;
+
 class HerriotSendAnimals
 {
-    /**
-     * @throws ConnectionException
-     */
-    public static function sendAnimal($application_animal_id)
+	/**
+	 * Метод добавления животных в очередь на отправку на регистрацию
+	 * @return bool
+	 */
+	public static function addSendAnimalQueue()
 	{
-		$application_animal_data						= DataApplicationsAnimals::find($application_animal_id);
+		Log::channel('herriot_animals_send')->info('Запустили метод добавления животных в очередь на отправку на регистрацию.');
 
-		if(empty($application_animal_data))
+		$animals_list		= DataApplications::getAnimalByApplicationStatusAndAnimalStatus(['sent'], ['in_application']);
+
+		if($animals_list && is_array($animals_list) && count($animals_list) > 0)
 		{
+			Log::channel('herriot_animals_send')->info('Пробуем добавить в очередь '.count($animals_list).' животных.');
+
+			foreach($animals_list as $animal_data)
+			{
+				ProcessHerriotSendAnimals::dispatch((array)$animal_data)->onQueue(env('QUEUE_HERRIOT_SEND_ANIMALS', 'herriot_send_animals'));
+			}
+
+			return true;
+		}else{
+			Log::channel('herriot_animals_send')->info('Животные для добавления не найдены.');
+
 			return false;
 		}
+	}
+
+
+    /**
+	 * Непосредственная отправка животного
+     * @throws ConnectionException
+     */
+    public static function sendAnimal($application_animal_data)
+	{
+//		$application_animal_data						= $application_animal_data->toArray();
+//
+//		if(empty($application_animal_data))
+//		{
+//			return false;
+//		}
 
 		$application_data								= DataApplications::find($application_animal_data['application_id']);
-		$animal_data									= DataAnimals::animalData($application_animal_data['animal_id'], $application_animal_data['application_id']);
+//		$animal_data									= DataAnimals::animalData($application_animal_data['animal_id'], $application_animal_data['application_id']);
 
-        $doctor_data                                    = SystemUsers::find($animal_data['doctor_id']);
+        $doctor_data                                    = SystemUsers::find($application_animal_data['doctor_id']);
 
 		if (
 			empty($doctor_data['user_herriot_login']) ||
@@ -143,7 +174,5 @@ class HerriotSendAnimals
 			'application_animal_status'					=> 'sent',
 			'application_herriot_application_id'		=> $applicationId
 		]);
-
-		// TODO: изобрести метод, который вытащит из базы компанию с нужным статусом и согласно сортировке и поставит ее в очередь? или нет???
 	}
 }

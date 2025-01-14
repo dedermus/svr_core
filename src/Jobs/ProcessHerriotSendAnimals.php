@@ -6,18 +6,18 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Svr\Core\Extensions\Handler\HerriotSendAnimals;
 
-//class ProcessHerriotSendAnimals implements ShouldQueue
-class ProcessHerriotSendAnimals
+class ProcessHerriotSendAnimals implements ShouldQueue
+//class ProcessHerriotSendAnimals
 {
     use Queueable;
-	protected string $application_animal_id;        // ID животного в заявке
+	protected $application_animal_data;        // ID животного в заявке
 
 	/**
 	 * Create a new job instance.
 	 */
-	public function __construct($application_animal_id)
+	public function __construct($application_animal_data)
 	{
-		$this->application_animal_id = $application_animal_id;
+		$this->application_animal_data = $application_animal_data;
 	}
 
     /**
@@ -26,6 +26,6 @@ class ProcessHerriotSendAnimals
     */
     public function handle(): void
     {
-        HerriotSendAnimals::sendAnimal($this->application_animal_id);
+        HerriotSendAnimals::sendAnimal($this->application_animal_data);
     }
 }
