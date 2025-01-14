@@ -129,6 +129,7 @@ class CoreServiceProvider extends ServiceProvider
                     'driver' => 'single',
                     'path' => storage_path('logs/email.log'),
                     'level' => 'info', // Уровень логирования
+                    'days' => env('LOG_DAILY_DAYS', 3),
                 ],
             ]
         );
@@ -140,6 +141,7 @@ class CoreServiceProvider extends ServiceProvider
                     'driver' => 'single',
                     'path' => storage_path('logs/crm.log'),
                     'level' => 'info', // Уровень логирования
+                    'days' => env('LOG_DAILY_DAYS', 3),
                 ],
             ]
         );
@@ -151,6 +153,7 @@ class CoreServiceProvider extends ServiceProvider
                     'driver' => 'single',
                     'path' => storage_path('logs/import.log'),
                     'level' => 'info', // Уровень логирования
+                    'days' => env('LOG_DAILY_DAYS', 3),
                 ],
             ]
         );

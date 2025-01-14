@@ -15,7 +15,7 @@ class ProcessImportMilk
      *
      * @var int
      */
-    public int $timeout = 120;
+    //public int $timeout = 120;
 
     /**
      * Create a new job instance.
