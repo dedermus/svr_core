@@ -6,16 +6,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Svr\Core\Extensions\Handler\ImportMilk;
 
-class ProcessImportMilk
+class ProcessImportMilk implements ShouldQueue
 {
     use Queueable;
-
-    /**
-     * Количество секунд, в течение которых задание может выполняться до истечения тайм-аута.
-     *
-     * @var int
-     */
-    //public int $timeout = 120;
 
     /**
      * Create a new job instance.
@@ -30,6 +23,6 @@ class ProcessImportMilk
     */
     public function handle(): void
     {
-        ImportMilk::animalsImport();
+        ImportMilk::animalsImportMilk();
     }
 }

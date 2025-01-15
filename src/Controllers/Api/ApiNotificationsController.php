@@ -80,7 +80,7 @@ class ApiNotificationsController extends Controller
 //
 //       // ProcessCrmGetListFarms::dispatch()
 //        ProcessCrmGetToken::dispatch('svr@plinor.ru', 'ZmQ0czNlWXpyMDY2bGQwbg==', );
-//        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
+        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
 //        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
 //        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
 //        //CrmAuth::getToken();
@@ -89,7 +89,7 @@ class ApiNotificationsController extends Controller
 //        ProcessCrmGetListCountries::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
 //        ProcessCrmGetListRegions::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
 //        ProcessCrmGetListDistricts::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-        ProcessImportMilk::dispatch()->onQueue(env('QUEUE_IMPORT', 'import'));
+        ProcessImportMilk::dispatch()->onQueue(env('QUEUE_IMPORT_MILK', 'import_milk'));
 
 
 

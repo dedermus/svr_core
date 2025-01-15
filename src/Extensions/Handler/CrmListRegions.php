@@ -4,13 +4,11 @@ namespace Svr\Core\Extensions\Handler;
 
 use DateTime;
 use Exception;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Svr\Core\Extensions\System\SystemFilter;
 use Svr\Directories\Models\DirectoryCountries;
 use Svr\Directories\Models\DirectoryCountriesRegion;
