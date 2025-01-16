@@ -7,12 +7,9 @@ use Symfony\Component\Process\Process;
 
 /**
  * Класс консольной команды artisan для вывода списка воркеров
- * Работает только в ОС Linux
  */
 class ListWorkers extends Command
 {
-    //TODO Необходимо реализовать рабочий вариант для ОС Windows
-
     /**
      * Имя и подпись консольной команды.
      *
@@ -25,7 +22,7 @@ class ListWorkers extends Command
      *
      * @var string
      */
-    protected $description = 'Список всех работающих работников очереди. Команда работает, если запущена на машине где запущены воркеры';
+    protected $description = 'Список всех работающих обработчиков очереди и запущенных в фоне планировщиков. Команда работает, если запущена на машине где запущены воркеры';
 
     protected $help = 'Список всех работающих работников очереди. Команда работает, если запущена на машине где запущены воркеры. Пример команды: php artisan svr:workers:list';
 
@@ -34,100 +31,110 @@ class ListWorkers extends Command
      */
     public function handle()
     {
-        // Определяем операционную систему
-        $os = strtoupper(substr(PHP_OS, 0, 3));
+        $PHP_OS = strtoupper(substr(PHP_OS, 0, 3));
+        $this->info('Операционная система: ' . $PHP_OS);
 
-        // Проверяем, доступны ли команды ps или wmic в зависимости от ОС
-        if ($os === 'LIN') {
+        // Проверяем, доступна ли команда tasklist
+        if ($PHP_OS === 'WIN') {
+            // Команда для выполнения
+            $cli_command = "wmic process where name='php.exe' get ProcessId,CommandLine";
+        } else {
             if (!shell_exec('command -v ps') || !shell_exec('command -v grep')) {
                 $this->error('Команды ps или grep недоступны. Убедитесь, что они установлены.');
-                return;
+                return false;
             }
-        } elseif ($os === 'WIN') {
-            if (!shell_exec('where wmic')) {
-                $this->error('Команда wmic недоступна. Убедитесь, что она установлена.');
-                return;
-            }
-        } else {
-            $this->error('Операционная система не поддерживается.');
-            return;
+            // $cli_command = 'ps aux | grep artisan | grep -v grep | awk -v spaces="  " \'BEGIN {OFS=","} {print $1, $2, $5 spaces $6 $7}\'';
+            $cli_command = 'ps aux';
         }
 
         // Используем системную команду для поиска запущенных воркеров
-        if ($os === 'LIN') {
-            $this->info('OS: LINUX');
-            $process = new Process(['ps', 'aux']);
-        } elseif ($os === 'WIN') {
-            $this->info('OS: WINDOWS');
-            $process = new Process(['wmic', 'process', 'get', 'name,commandline,processid']);
-        }
-
-        // Используем системную команду для поиска запущенных воркеров
+        $process = new Process(explode(' ', $cli_command));
         $process->run();
+
         if (!$process->isSuccessful()) {
             $this->error('Не удалось получить список воркеров.');
-            return;
+            return false;
         }
 
         // Получаем вывод команды
-        $output = $process->getOutput();
+        $output_cli = $process->getOutput();
 
+        if ($PHP_OS === 'WIN') {
+            $lines = $this->formated_output_for_windows($output_cli);
+            $workers = $this->rows_table_windows($lines);
+        }
+        if ($PHP_OS === 'LIN') {
+
+            $lines = $this->formated_output_for_linux($output_cli);
+            $workers = $this->rows_table_linux($lines);
+        }
+        $this->print_table_to_console($workers);
+    }
+
+    /**
+     * Форматирование вывода из консоли в среде Windows.
+     */
+    private function formated_output_for_windows($output): array
+    {
+        $lines = explode("\n", $output);
+        $result = [];
+        foreach ($lines as $line) {
+            // Пропускаем пустые строки
+            if (empty(trim($line))) {
+                continue;
+            }
+
+            // Пропускаем заголовок
+            if (str_starts_with($line, 'CommandLine')) {
+                continue;
+            }
+
+            // Пропускаем если нет в строке 'php'
+            if (strpos($line, 'php') === false) {
+                continue;
+            }
+
+
+            // Удаляем кавычки (одинарные или двойные) только вокруг слова "artisan"
+            $line = preg_replace('/[\'"]artisan[\'"]/', 'artisan', $line);
+
+            // Удаляем путь до php.exe и слово php
+            $line = preg_replace('/"[^"]*php\.exe"\s*|^php\s+/', '', $line);
+
+            // Убираем лишние пробелы в начале и конце строки
+            $line = trim($line);
+            // добавляем в result $line
+            $result[] = $line;
+        }
+        return $result;
+
+    }
+
+
+    /**
+     * Форматирование вывода из консоли в среде Linux
+     */
+    private function formated_output_for_linux($output): array
+    {
+        $result = [];
         // Фильтруем вывод с помощью PHP
         $lines = explode("\n", $output);
-        $lines = array_filter($lines);
-
-        // Ищем строки, содержащие "queue:work"
-        $workers = [];
 
         foreach ($lines as $line) {
             // Пропускаем пустые строки
             if (empty($line)) {
                 continue;
             }
-
-            // Для Windows
-            if ($os === 'WIN') {
-                $parts = str_getcsv($line);
-                if (strpos($parts[0], 'php') !== false && strpos($parts[0], 'queue:work') !== false) {
-                    $workers[] = [
-                        'pid' => $parts[1],         // PID процесса
-                        'user' => $parts[7],        // Пользователь
-                        'command' => $parts[0],     // Команда
-                        'queue' => $this->extractQueueFromCommand($parts[0]), // Очередь
-                    ];
-                }
-            } else {
-                // Ищем строки, содержащие "queue:work"
-                if (strpos($line, 'queue:work') !== false) {
-                    // Разбиваем строку на части
-                    $parts = preg_split('/\s+/', $line);
-
-                    // Определяем команду
-                    $command = implode(' ', array_slice($parts, 4)); // Собираем команду из оставшихся элементов
-
-                    // Ищем аргументы команды
-                    $queue = $this->extractQueueFromCommand($command);
-
-                    // Добавляем информацию о воркере в массив
-                    $workers[] = [
-                        'pid' => $parts[1],         // PID процесса
-                        'user' => $parts[2],        // Пользователь
-                        'command' => $command,     // Команда
-                        'queue' => $queue,         // Очередь
-                    ];
-                }
+            // ропускаем если нет в строке 'artisan schedule' или 'artisan queue'
+            if (strpos($line, 'artisan schedule') === false && strpos($line, 'artisan queue') === false) {
+                continue;
             }
+            // добавляем в result $line
+            $result[] = $line;
         }
-
-        // Выводим информацию о воркерах в консоль. Оформляем в виде таблицы.
-        if (empty($workers)) {
-            $this->info('Воркеры не найдены.');
-        } else {
-            $this->info('Running workers:');
-            $headers = ['PID', 'User', 'Command', 'Queue'];
-            $this->table($headers, $workers);
-        }
+        return $result;
     }
+
 
     /**
      * Извлекает название очереди из команды.
@@ -141,6 +148,85 @@ class ListWorkers extends Command
         preg_match('/--queue=([^\s]+)/', $command, $matches);
 
         // Возвращаем название очереди или "default"
-        return $matches[1] ?? 'default';
+        // Если в команде есть queue:work
+        if (strpos($command, 'queue:work') !== false) {
+            return $matches[1] ?? 'default';
+        } else {
+            return $matches[1] ?? '';
+        }
+    }
+
+    /**
+     *Создание массива строк для таблицы.
+     */
+    private function rows_table_windows($lines): array
+    {
+        $workers = [];
+        foreach ($lines as $line) {
+            // Используем регулярное выражение для извлечения команды и числа
+            if (preg_match('/^(.*?)\s+(\d+)$/', $line, $matches)) {
+                $command = trim($matches[1]); // Всё до последнего числа — это команда
+                $processId = (int)$matches[2]; // Последнее число — это processId
+
+                // Определяем тип команды (schedule или queue)
+                if (str_contains($command, 'schedule')) {
+                    $command = 'php artisan schedule:work';
+                }
+
+                // Извлекаем очередь из команды
+                $queue = $this->extractQueueFromCommand($command);
+
+                $workers[] = [
+                    'pid' => $processId,        // PID процесса
+                    'user' => "",           // Пользователь (недоступно в Windows)
+                    'command' => $command,     // Команда
+                    'queue' => $queue,         // Очередь
+                ];
+            }
+        }
+        return $workers;
+    }
+
+    /**
+     * Создание массива строк для таблицы.
+     */
+    private function rows_table_linux($lines): array
+    {
+        $workers = [];
+
+        foreach ($lines as $line) {
+            // Разбиваем строку на части
+            $parts = preg_split('/\s+/', $line);
+
+            // Определяем команду
+            $command = implode(' ', array_slice($parts, 4)); // Собираем команду из оставшихся элементов
+
+            // Ищем аргументы команды
+            $queue = $this->extractQueueFromCommand($command);
+
+            // Добавляем информацию о воркере в массив
+            $workers[] = [
+                'pid' => $parts[1],         // PID процесса
+                'user' => $parts[2],        // Пользователь
+                'command' => $command,      // Команда
+                'queue' => $queue,          // Очередь
+            ];
+
+        }
+        return $workers;
+    }
+
+    /**
+     * Печать таблицы в консоль
+     */
+    private function print_table_to_console(array $workers): void
+    {
+        if (empty($workers)) {
+            $this->info('No workers found.');
+        } else {
+            $this->info('Running workers:');
+            $headers = ['PID', 'USER', 'COMMAND', 'QUEUE'];
+            $this->table($headers, $workers);
+        }
     }
 }
