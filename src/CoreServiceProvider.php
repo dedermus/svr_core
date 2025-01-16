@@ -6,6 +6,11 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\ServiceProvider;
+use Svr\Core\Commands\AddJobsToUpdateAnimalsQueueCommand;
+use Svr\Core\Commands\AddJobsToUpdateCheckAnimalsQueueCommand;
+use Svr\Core\Commands\AddJobsToUpdateCompanyObjectsQueueCommand;
+use Svr\Core\Commands\AddJobsToUpdateCompanyQueueCommand;
+use Svr\Core\Commands\AddJobsToUpdateDirectoriesQueueCommand;
 use Svr\Core\Console\Commands\ListWorkers;
 use Svr\Core\Console\Commands\QueueMonitor;
 use Svr\Core\Middleware\ApiValidationErrors;
@@ -15,9 +20,14 @@ use Svr\Core\Models\SystemUsers;
 
 class CoreServiceProvider extends ServiceProvider
 {
-        protected array $commands = [
+    protected array $commands = [
         ListWorkers::class,
-        QueueMonitor::class
+        QueueMonitor::class,
+        AddJobsToUpdateAnimalsQueueCommand::class,
+        AddJobsToUpdateDirectoriesQueueCommand::class,
+        AddJobsToUpdateCompanyQueueCommand::class,
+        AddJobsToUpdateCompanyObjectsQueueCommand::class,
+        AddJobsToUpdateCheckAnimalsQueueCommand::class
     ];
 
     /**
@@ -33,7 +43,6 @@ class CoreServiceProvider extends ServiceProvider
             $this->loadRoutesFrom(__DIR__ . '/../routes/console.php');
         //}
         $this->register();
-
 
         // зарегистрировать переводы
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'svr-core-lang');
