@@ -3,10 +3,13 @@
 namespace Svr\Core\Extensions\System;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Svr\Core\Enums\ImportStatusEnum;
 use Svr\Core\Enums\SystemSexEnum;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
 use Svr\Data\Models\DataAnimals;
 use Svr\Data\Models\DataAnimalsCodes;
+use Svr\Data\Models\DataCompaniesLocations;
 use Svr\Data\Models\DataCompaniesObjects;
 use Svr\Directories\Models\DirectoryAnimalsBreeds;
 use Svr\Directories\Models\DirectoryAnimalsSpecies;
@@ -18,6 +21,113 @@ use Svr\Directories\Models\DirectoryToolsLocations;
 
 class AnimalsImport
 {
+    public static function animal_import_worker($modelAnimal, $task, $matching_fields, $field_primary_key)
+    {
+        $animal = $modelAnimal::where('import_status', ImportStatusEnum::NEW->value)
+            ->where('task', $task)
+            ->first();
+
+        if (is_null($animal)){
+            Log::channel('import_milk')->info('Нет животных для импорта.');
+            return true;
+        }
+
+        $animal = $animal->toArray();
+
+        // обновим статус записи животного при импорте на статус - в прогрессе
+        $modelAnimal::where($field_primary_key, $animal[$field_primary_key])
+            ->update(['import_status' => ImportStatusEnum::IN_PROGRESS->value]
+            );
+        // сопоставим код породы животного из селекса с породой из справочника Хориота
+        $result_animal_breed = AnimalsImport::animal_import_breed_check($animal, $animal['npor']);
+        $breed_id = (isset($result_animal_breed['breed_id'])) ? $result_animal_breed['breed_id'] : false;
+        // сопоставим пол породы животного из селекса с полом из справочника Хориота
+        $result_animal_sex = AnimalsImport::animal_import_sex_check($animal['npol']);
+        $animal_sex_id = (isset($result_animal_sex['gender_id'])) ? $result_animal_sex['gender_id'] : false;
+        // сопоставление инвентарного номера отца животного
+        $animal_father_inv = AnimalsImport::animal_import_father_inv_check($animal);
+        // сопоставим код породы отца из селекса с породой из справочника Хориота
+        $result_father_breed = AnimalsImport::animal_import_breed_check($animal, $animal['npor_otca']);
+        $breed_father_id = (isset($result_father_breed['breed_id'])) ? $result_father_breed['breed_id'] : false;
+
+        // сопоставление инвентарного номера матери животного
+        $animal_mother_inv = AnimalsImport::animal_import_mother_inv_check($animal);
+        // сопоставим код породы отца из селекса с породой из справочника Хориота
+        $result_mother_breed = AnimalsImport::animal_import_breed_check($animal, $animal['npor_materi']);
+        $breed_mother_id = (isset($result_mother_breed['breed_id'])) ? $result_mother_breed['breed_id'] : false;
+
+        // определение племенной ценности
+        $animal_breeding_value = AnimalsImport::animal_import_isp_check($animal);
+
+        // получаем локацию хозяйства
+        $company_location_data = DataCompaniesLocations::companyLocationData(false, false, $animal['nobl'], $animal['nrn'], $animal['nhoz']);
+
+        if(!isset($company_location_data['company_location_id']))
+        {
+            // обновим статус записи животного при импорте на статус - ошибка
+            $modelAnimal::where($field_primary_key, $animal[$field_primary_key])
+                ->update(['import_status' => ImportStatusEnum::ERROR->value]
+                );
+            Log::channel('import_milk')->warning('Ошибка импорта животного, отсутствует локация хозяйства, GUID_SVR: ' . $animal['guid_svr']);
+            return false;
+        } else {
+
+            $company_location_id = $company_location_data['company_location_id'];
+
+            // получаем company_id хозяйства рождения животного
+            $company_birth_data = DataCompaniesLocations::companyLocationData(
+                false, false, false, false, $animal['nhoz_rogd']
+            );
+
+            // подставим расчетные поля
+            $animal['nhoz'] = $company_location_id;
+            $animal['nhoz_keep'] = $company_location_data['company_id'] ?? null;
+            $animal['nhoz_rogd'] = $company_birth_data['company_id'] ?? null;
+            $animal['npor'] = $breed_id;
+            $animal['npol'] = $animal_sex_id;
+            $animal['ninv_materi'] = $animal_mother_inv;
+            $animal['npor_materi'] = $breed_mother_id;
+
+            $animal['ninv_otca'] = $animal_father_inv;
+            $animal['npor_otca'] = $breed_father_id;
+            $animal['isp'] = $animal_breeding_value;
+
+            // подготавливаем список полей для животного, которые прописаны в массиве сопоставления $matching_fields
+            $result_animal = AnimalsImport::animal_import_value_check($animal, $matching_fields);
+
+            if ($result_animal !== []) {
+                // импорт животного в таблицу DATA.DATA_ANIMALS
+                $animal_id = AnimalsImport::animal_import_data_animals_add($result_animal);
+                if ((int)$animal_id > 0) {
+                    // создание всех идентификаторов по животному в таблице DATA.DATA_ANIMALS_CODES
+                    // и обновление ключей идентификаторов животного в таблице DATA.DATA_ANIMALS
+                    $status = AnimalsImport::animal_import_identifiers_add($animal, $animal_id);
+                    if ($status === true) {
+                        // обновим статус записи животного при импорте на статус - выполнен
+                        $modelAnimal::where($field_primary_key, $animal[$field_primary_key])
+                            ->update(['import_status' => ImportStatusEnum::COMPLETED->value]
+                            );
+                        Log::channel('import_milk')->info('Импорт животного успешно завершен, GUID_SVR: ' . $animal['guid_svr']);
+                    } else {
+                        // обновим статус записи животного при импорте на статус - ошибка
+                        $modelAnimal::where($field_primary_key, $animal[$field_primary_key])
+                            ->update(['import_status' => ImportStatusEnum::ERROR->value]
+                            );
+                        Log::channel('import_milk')->warning('Ошибка создания идентификаторов животного, GUID_SVR: ' . $animal['guid_svr']);
+                    }
+                } else {
+                    // обновим статус записи животного при импорте на статус - ошибка
+                    $modelAnimal::where($field_primary_key, $animal[$field_primary_key])
+                        ->update(['import_status' => ImportStatusEnum::ERROR->value]
+                        );
+                    Log::channel('import_milk')->warning('Ошибка импорта животного при добавлении в DATA_ANIMAL, GUID_SVR: ' . $animal['guid_svr']);
+                }
+            } else {
+                Log::channel('import_milk')->warning('Нет полей сопоставления для сохранения данных животного, GUID_SVR: ' . $animal['guid_svr']);
+            }
+        }
+    }
+
     /**
      * Сопоставление кода породы из селекса с породой из справочника Хорриот
      *
