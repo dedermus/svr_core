@@ -129,20 +129,59 @@ class CoreServiceProvider extends ServiceProvider
                     'driver' => 'single',
                     'path' => storage_path('logs/email.log'),
                     'level' => 'info', // Уровень логирования
+                    'days' => env('LOG_DAILY_DAYS', 3),
                 ],
             ]
         );
 
-        /** Добавим провайдер для очереди email */
+        /** Добавим провайдер для очереди crm */
         config(
             [
                 'logging.channels.crm' => [
                     'driver' => 'single',
                     'path' => storage_path('logs/crm.log'),
                     'level' => 'info', // Уровень логирования
+                    'days' => env('LOG_DAILY_DAYS', 3),
                 ],
             ]
         );
+
+        /** Добавим провайдер для очереди import_milk  */
+        config(
+            [
+                'logging.channels.import_milk' => [
+                    'driver' => 'single',
+                    'path' => storage_path('logs/import_milk.log'),
+                    'level' => 'info', // Уровень логирования
+                    'days' => env('LOG_DAILY_DAYS', 3),
+                ],
+            ]
+        );
+
+        /** Добавим провайдер для очереди import_beef  */
+        config(
+            [
+                'logging.channels.import_beef' => [
+                    'driver' => 'single',
+                    'path' => storage_path('logs/import_beef.log'),
+                    'level' => 'info', // Уровень логирования
+                    'days' => env('LOG_DAILY_DAYS', 3),
+                ],
+            ]
+        );
+
+        /** Добавим провайдер для очереди import_sheep  */
+        config(
+            [
+                'logging.channels.import_sheep' => [
+                    'driver' => 'single',
+                    'path' => storage_path('logs/import_sheep.log'),
+                    'level' => 'info', // Уровень логирования
+                    'days' => env('LOG_DAILY_DAYS', 3),
+                ],
+            ]
+        );
+
 
         /** Добавим в конфиг файл config/app.php ключ 'api_prefix' равный значению ключа API_PREFIX из окружения (.env)
          * @example Получить значение: config('svr.api_prefix') config('svr.api_prefix')

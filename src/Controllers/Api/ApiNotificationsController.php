@@ -16,6 +16,7 @@ use Svr\Core\Jobs\ProcessCrmGetListDistricts;
 use Svr\Core\Jobs\ProcessCrmGetListFarms;
 use Svr\Core\Jobs\ProcessCrmGetListRegions;
 use Svr\Core\Jobs\ProcessCrmGetListUsers;
+use Svr\Core\Jobs\ProcessImportMilk;
 use Svr\Core\Jobs\ProcessSendingEmail;
 use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersNotifications;
@@ -55,7 +56,7 @@ class ApiNotificationsController extends Controller
         $user = $this->systemUsers->getUser(optional($notification)->user_id);
         $this->updateNotificationDateView($notification_id);
         $data = $this->prepareResponseData($notification, $user);
-        $recorded = Http::recorded();
+        //$recorded = Http::recorded();
         // Basic authentication...
 //        $response = Http::acceptJson()->post('https://crm.plinor.local/allApi/getToken/', [
 //            'email' => 'svr@plinor.ru', 'password' => 'ZmQ0czNlWXpyMDY2bGQwbg=='
@@ -80,14 +81,18 @@ class ApiNotificationsController extends Controller
 //       // ProcessCrmGetListFarms::dispatch()
 //        ProcessCrmGetToken::dispatch('svr@plinor.ru', 'ZmQ0czNlWXpyMDY2bGQwbg==', );
         ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
-        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
-        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
-        //CrmAuth::getToken();
-        ProcessCrmGetListUsers::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-        ProcessCrmGetListFarms::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-        ProcessCrmGetListCountries::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-        ProcessCrmGetListRegions::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-        ProcessCrmGetListDistricts::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+//        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
+//        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
+//        //CrmAuth::getToken();
+//        ProcessCrmGetListUsers::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+//        ProcessCrmGetListFarms::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+//        ProcessCrmGetListCountries::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+//        ProcessCrmGetListRegions::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+//        ProcessCrmGetListDistricts::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
+        ProcessImportMilk::dispatch()->onQueue(env('QUEUE_IMPORT_MILK', 'import_milk'));
+
+
+
 
         return new SvrApiResponseResource($data);
     }
