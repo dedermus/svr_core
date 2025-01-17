@@ -6,6 +6,11 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\ServiceProvider;
+use Svr\Core\Commands\AddJobsToUpdateAnimalsQueueCommand;
+use Svr\Core\Commands\AddJobsToUpdateCheckAnimalsQueueCommand;
+use Svr\Core\Commands\AddJobsToUpdateCompanyObjectsQueueCommand;
+use Svr\Core\Commands\AddJobsToUpdateCompanyQueueCommand;
+use Svr\Core\Commands\AddJobsToUpdateDirectoriesQueueCommand;
 use Svr\Core\Console\Commands\ListWorkers;
 use Svr\Core\Console\Commands\QueueMonitor;
 use Svr\Core\Middleware\ApiValidationErrors;
@@ -15,9 +20,14 @@ use Svr\Core\Models\SystemUsers;
 
 class CoreServiceProvider extends ServiceProvider
 {
-        protected array $commands = [
+    protected array $commands = [
         ListWorkers::class,
-        QueueMonitor::class
+        QueueMonitor::class,
+        AddJobsToUpdateAnimalsQueueCommand::class,
+        AddJobsToUpdateDirectoriesQueueCommand::class,
+        AddJobsToUpdateCompanyQueueCommand::class,
+        AddJobsToUpdateCompanyObjectsQueueCommand::class,
+        AddJobsToUpdateCheckAnimalsQueueCommand::class
     ];
 
     /**
@@ -129,7 +139,6 @@ class CoreServiceProvider extends ServiceProvider
                     'driver' => 'single',
                     'path' => storage_path('logs/email.log'),
                     'level' => 'info', // Уровень логирования
-                    'days' => env('LOG_DAILY_DAYS', 3),
                 ],
             ]
         );
@@ -141,7 +150,6 @@ class CoreServiceProvider extends ServiceProvider
                     'driver' => 'single',
                     'path' => storage_path('logs/crm.log'),
                     'level' => 'info', // Уровень логирования
-                    'days' => env('LOG_DAILY_DAYS', 3),
                 ],
             ]
         );
@@ -182,6 +190,61 @@ class CoreServiceProvider extends ServiceProvider
             ]
         );
 
+
+		/** Добавим файл лога для очереди herriot_directories */
+		config(
+			[
+				'logging.channels.herriot_directories' => [
+					'driver' => 'single',
+					'path' => storage_path('logs/herriot_directories.log'),
+					'level' => 'info', // Уровень логирования
+				],
+			]
+		);
+
+		/** Добавим файл лога для очереди herriot_companies */
+		config(
+			[
+				'logging.channels.herriot_companies' => [
+					'driver' => 'single',
+					'path' => storage_path('logs/herriot_companies.log'),
+					'level' => 'info', // Уровень логирования
+				],
+			]
+		);
+
+        /** Добавим файл лога для очереди herriot_companies_objects */
+        config(
+            [
+                'logging.channels.herriot_companies_objects' => [
+                    'driver' => 'single',
+                    'path' => storage_path('logs/herriot_companies_objects.log'),
+                    'level' => 'info', // Уровень логирования
+                ],
+            ]
+        );
+
+		/** Добавим файл лога для очереди herriot_companies_objects */
+		config(
+			[
+				'logging.channels.herriot_animals_send' => [
+					'driver' => 'single',
+					'path' => storage_path('logs/herriot_animals_send.log'),
+					'level' => 'info', // Уровень логирования
+				],
+			]
+		);
+
+		/** Добавим файл лога для очереди herriot_companies_objects */
+		config(
+			[
+				'logging.channels.herriot_animals_check' => [
+					'driver' => 'single',
+					'path' => storage_path('logs/herriot_animals_check.log'),
+					'level' => 'info', // Уровень логирования
+				],
+			]
+		);
 
         /** Добавим в конфиг файл config/app.php ключ 'api_prefix' равный значению ключа API_PREFIX из окружения (.env)
          * @example Получить значение: config('svr.api_prefix') config('svr.api_prefix')

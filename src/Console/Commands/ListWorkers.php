@@ -7,9 +7,12 @@ use Symfony\Component\Process\Process;
 
 /**
  * Класс консольной команды artisan для вывода списка воркеров
+ * Работает только в ОС Linux
  */
 class ListWorkers extends Command
 {
+    //TODO Необходимо реализовать рабочий вариант для ОС Windows
+
     /**
      * Имя и подпись консольной команды.
      *
@@ -31,23 +34,36 @@ class ListWorkers extends Command
      */
     public function handle()
     {
-        $PHP_OS = strtoupper(substr(PHP_OS, 0, 3));
-        // Проверяем, доступна ли команда tasklist
-        if ($PHP_OS === 'WIN') {
-            // Команда для выполнения
-            $command = "wmic process where name='php.exe' get ProcessId,CommandLine,ExecutablePath";
-        } else {
+        // Определяем операционную систему
+        $os = strtoupper(substr(PHP_OS, 0, 3));
+
+        // Проверяем, доступны ли команды ps или wmic в зависимости от ОС
+        if ($os === 'LIN') {
             if (!shell_exec('command -v ps') || !shell_exec('command -v grep')) {
                 $this->error('Команды ps или grep недоступны. Убедитесь, что они установлены.');
                 return;
             }
-            $command = 'ps aux';
+        } elseif ($os === 'WIN') {
+            if (!shell_exec('where wmic')) {
+                $this->error('Команда wmic недоступна. Убедитесь, что она установлена.');
+                return;
+            }
+        } else {
+            $this->error('Операционная система не поддерживается.');
+            return;
         }
 
         // Используем системную команду для поиска запущенных воркеров
-        $process = new Process(explode(' ', $command));
+        if ($os === 'LIN') {
+            $this->info('OS: LINUX');
+            $process = new Process(['ps', 'aux']);
+        } elseif ($os === 'WIN') {
+            $this->info('OS: WINDOWS');
+            $process = new Process(['wmic', 'process', 'get', 'name,commandline,processid']);
+        }
+
+        // Используем системную команду для поиска запущенных воркеров
         $process->run();
-        echo $process->getOutput();
         if (!$process->isSuccessful()) {
             $this->error('Не удалось получить список воркеров.');
             return;
@@ -56,21 +72,11 @@ class ListWorkers extends Command
         // Получаем вывод команды
         $output = $process->getOutput();
 
-/*
-В винде
-D:\OSPanel\home\laravel.plinor.local>wmic process where "name='php.exe'" get ProcessId,CommandLine,ExecutablePath
-CommandLine                                                                          ExecutablePath                          ProcessId
-php  artisan schedule:work                                                           D:\OSPanel\modules\PHP-8.3\PHP\php.exe  9336
-"D:\OSPanel\modules\PHP-8.3\PHP\php.exe"  "artisan" queue:work --queue=crm           D:\OSPanel\modules\PHP-8.3\PHP\php.exe  18032
-"D:\OSPanel\modules\PHP-8.3\PHP\php.exe"  "artisan" queue:work --queue=email         D:\OSPanel\modules\PHP-8.3\PHP\php.exe  6676
-"D:\OSPanel\modules\PHP-8.3\PHP\php.exe"  "artisan" queue:work --queue=import_milk   D:\OSPanel\modules\PHP-8.3\PHP\php.exe  17520
-"D:\OSPanel\modules\PHP-8.3\PHP\php.exe"  "artisan" queue:work --queue=import_beef   D:\OSPanel\modules\PHP-8.3\PHP\php.exe  18288
-"D:\OSPanel\modules\PHP-8.3\PHP\php.exe"  "artisan" queue:work --queue=import_sheep  D:\OSPanel\modules\PHP-8.3\PHP\php.exe  21336
-php  artisan queue:work --queue=import_milk                                          D:\OSPanel\modules\PHP-8.3\PHP\php.exe  23168
-*/
-
         // Фильтруем вывод с помощью PHP
         $lines = explode("\n", $output);
+        $lines = array_filter($lines);
+
+        // Ищем строки, содержащие "queue:work"
         $workers = [];
 
         foreach ($lines as $line) {
@@ -80,16 +86,9 @@ php  artisan queue:work --queue=import_milk                                     
             }
 
             // Для Windows
-            if ($PHP_OS === 'WIN') {
-                // Используем регулярное выражение для разбивки строки
-                preg_match_all('/"([^"]+)"|(\S+)/', $line, $matches);
-
-                // Объединяем результаты в один массив
-                $parts = array_merge(array_filter($matches[1]), array_filter($matches[2]));
-
-                echo '#-----# | '.$parts[3]."\n";
-                if (strpos($parts[0], 'php.exe') !== false && strpos($parts[0], 'queue:work') !== false) {
-                    echo $parts;
+            if ($os === 'WIN') {
+                $parts = str_getcsv($line);
+                if (strpos($parts[0], 'php') !== false && strpos($parts[0], 'queue:work') !== false) {
                     $workers[] = [
                         'pid' => $parts[1],         // PID процесса
                         'user' => $parts[7],        // Пользователь
@@ -122,7 +121,7 @@ php  artisan queue:work --queue=import_milk                                     
 
         // Выводим информацию о воркерах в консоль. Оформляем в виде таблицы.
         if (empty($workers)) {
-            $this->info('No workers found.');
+            $this->info('Воркеры не найдены.');
         } else {
             $this->info('Running workers:');
             $headers = ['PID', 'User', 'Command', 'Queue'];
