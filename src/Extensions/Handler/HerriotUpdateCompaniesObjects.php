@@ -41,6 +41,8 @@ class HerriotUpdateCompaniesObjects
         {
             Log::channel('herriot_companies_objects')->info('Пробуем добавить в очередь компанию: '.($company['company_id']));
 
+			DataCompanies::find($company['company_id'])->update(['company_date_update_objects' => date('Y-m-d H:i:s')]);
+
             ProcessHerriotUpdateCompaniesObjects::dispatch($company['company_id'])->onQueue(env('QUEUE_HERRIOT_COMPANIES_OBJECTS', 'herriot_companies_objects'));
 
             return true;
