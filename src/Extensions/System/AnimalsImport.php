@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Svr\Core\Enums\ImportStatusEnum;
 use Svr\Core\Enums\SystemSexEnum;
 use Svr\Core\Enums\SystemStatusDeleteEnum;
+use Svr\Core\Enums\SystemTaskEnum;
 use Svr\Data\Models\DataAnimals;
 use Svr\Data\Models\DataAnimalsCodes;
 use Svr\Data\Models\DataCompaniesLocations;
@@ -21,46 +22,60 @@ use Svr\Directories\Models\DirectoryToolsLocations;
 
 class AnimalsImport
 {
-    public static function animal_import_worker($modelAnimal, $task, $matching_fields, $field_primary_key)
+    /**
+     * Обработка задания из очереди
+     * молочные/мясные/овцы
+     *
+     * @param $modelAnimal              - модель таблицы из схемы RAW
+     * @param $task                     - задача
+     * @param $matching_fields          - поля сопоставления
+     * @param $field_primary_key        - первичный ключ таблицы
+     * @param $animal_id                - ID животного
+     *
+     * @return bool|void
+     */
+    public static function animal_import_worker($modelAnimal, $task, $matching_fields, $field_primary_key, $animal_id, $import_channel)
     {
-        $animal = $modelAnimal::where('import_status', ImportStatusEnum::NEW->value)
+        // получим животное
+        $animal = $modelAnimal::where('import_status', ImportStatusEnum::IN_PROGRESS->value)
             ->where('task', $task)
+            ->where($field_primary_key, $animal_id)
             ->first();
 
         if (is_null($animal)){
-            Log::channel('import_milk')->info('Нет животных для импорта.');
+            Log::channel($import_channel)->info('Нет животных для импорта.');
             return true;
         }
-
+        // приведем результат к массиву
         $animal = $animal->toArray();
 
-        // обновим статус записи животного при импорте на статус - в прогрессе
-        $modelAnimal::where($field_primary_key, $animal[$field_primary_key])
-            ->update(['import_status' => ImportStatusEnum::IN_PROGRESS->value]
-            );
         // сопоставим код породы животного из селекса с породой из справочника Хориота
-        $result_animal_breed = AnimalsImport::animal_import_breed_check($animal, $animal['npor']);
+        $result_animal_breed = self::animal_import_breed_check($animal, $animal['npor']);
         $breed_id = (isset($result_animal_breed['breed_id'])) ? $result_animal_breed['breed_id'] : false;
         // сопоставим пол породы животного из селекса с полом из справочника Хориота
-        $result_animal_sex = AnimalsImport::animal_import_sex_check($animal['npol']);
+        $result_animal_sex = self::animal_import_sex_check($animal['npol']);
         $animal_sex_id = (isset($result_animal_sex['gender_id'])) ? $result_animal_sex['gender_id'] : false;
         // сопоставление инвентарного номера отца животного
-        $animal_father_inv = AnimalsImport::animal_import_father_inv_check($animal);
-        // сопоставим код породы отца из селекса с породой из справочника Хориота
-        $result_father_breed = AnimalsImport::animal_import_breed_check($animal, $animal['npor_otca']);
-        $breed_father_id = (isset($result_father_breed['breed_id'])) ? $result_father_breed['breed_id'] : false;
+        $animal_father_inv = self::animal_import_father_inv_check($animal);
 
         // сопоставление инвентарного номера матери животного
-        $animal_mother_inv = AnimalsImport::animal_import_mother_inv_check($animal);
-        // сопоставим код породы отца из селекса с породой из справочника Хориота
-        $result_mother_breed = AnimalsImport::animal_import_breed_check($animal, $animal['npor_materi']);
-        $breed_mother_id = (isset($result_mother_breed['breed_id'])) ? $result_mother_breed['breed_id'] : false;
+        $animal_mother_inv = self::animal_import_mother_inv_check($animal);
+
 
         // определение племенной ценности
-        $animal_breeding_value = AnimalsImport::animal_import_isp_check($animal);
+        $animal_breeding_value = self::animal_import_isp_check($animal);
 
         // получаем локацию хозяйства
         $company_location_data = DataCompaniesLocations::companyLocationData(false, false, $animal['nobl'], $animal['nrn'], $animal['nhoz']);
+        // у ОВЕЦ нет "npor_otca" и "npor_materi"
+        if ($task !== SystemTaskEnum::SHEEP->value) {
+            // сопоставим код породы отца из селекса с породой из справочника Хориота
+            $result_father_breed = self::animal_import_breed_check($animal, $animal['npor_otca']);
+            $breed_father_id = (isset($result_father_breed['breed_id'])) ? $result_father_breed['breed_id'] : false;
+            // сопоставим код породы отца из селекса с породой из справочника Хориота
+            $result_mother_breed = self::animal_import_breed_check($animal, $animal['npor_materi']);
+            $breed_mother_id = (isset($result_mother_breed['breed_id'])) ? $result_mother_breed['breed_id'] : false;
+        }
 
         if(!isset($company_location_data['company_location_id']))
         {
@@ -68,10 +83,9 @@ class AnimalsImport
             $modelAnimal::where($field_primary_key, $animal[$field_primary_key])
                 ->update(['import_status' => ImportStatusEnum::ERROR->value]
                 );
-            Log::channel('import_milk')->warning('Ошибка импорта животного, отсутствует локация хозяйства, GUID_SVR: ' . $animal['guid_svr']);
+            Log::channel($import_channel)->warning('Ошибка импорта животного, отсутствует локация хозяйства, GUID_SVR: ' . $animal['guid_svr']);
             return false;
         } else {
-
             $company_location_id = $company_location_data['company_location_id'];
 
             // получаем company_id хозяйства рождения животного
@@ -86,44 +100,48 @@ class AnimalsImport
             $animal['npor'] = $breed_id;
             $animal['npol'] = $animal_sex_id;
             $animal['ninv_materi'] = $animal_mother_inv;
-            $animal['npor_materi'] = $breed_mother_id;
+
 
             $animal['ninv_otca'] = $animal_father_inv;
-            $animal['npor_otca'] = $breed_father_id;
+
             $animal['isp'] = $animal_breeding_value;
+            // у ОВЕЦ нет "npor_otca" и "npor_materi"
+            if ($task !== SystemTaskEnum::SHEEP->value) {
+                $animal['npor_otca'] = $breed_father_id;
+                $animal['npor_materi'] = $breed_mother_id;
+            }
 
             // подготавливаем список полей для животного, которые прописаны в массиве сопоставления $matching_fields
-            $result_animal = AnimalsImport::animal_import_value_check($animal, $matching_fields);
-
+            $result_animal = self::animal_import_value_check($animal, $matching_fields);
             if ($result_animal !== []) {
                 // импорт животного в таблицу DATA.DATA_ANIMALS
-                $animal_id = AnimalsImport::animal_import_data_animals_add($result_animal);
+                $animal_id = self::animal_import_data_animals_add($result_animal);
                 if ((int)$animal_id > 0) {
                     // создание всех идентификаторов по животному в таблице DATA.DATA_ANIMALS_CODES
                     // и обновление ключей идентификаторов животного в таблице DATA.DATA_ANIMALS
-                    $status = AnimalsImport::animal_import_identifiers_add($animal, $animal_id);
+                    $status = self::animal_import_identifiers_add($animal, $animal_id);
                     if ($status === true) {
                         // обновим статус записи животного при импорте на статус - выполнен
                         $modelAnimal::where($field_primary_key, $animal[$field_primary_key])
                             ->update(['import_status' => ImportStatusEnum::COMPLETED->value]
                             );
-                        Log::channel('import_milk')->info('Импорт животного успешно завершен, GUID_SVR: ' . $animal['guid_svr']);
+                        Log::channel($import_channel)->info('Импорт животного успешно завершен, GUID_SVR: ' . $animal['guid_svr']);
                     } else {
                         // обновим статус записи животного при импорте на статус - ошибка
                         $modelAnimal::where($field_primary_key, $animal[$field_primary_key])
                             ->update(['import_status' => ImportStatusEnum::ERROR->value]
                             );
-                        Log::channel('import_milk')->warning('Ошибка создания идентификаторов животного, GUID_SVR: ' . $animal['guid_svr']);
+                        Log::channel($import_channel)->warning('Ошибка создания идентификаторов животного, GUID_SVR: ' . $animal['guid_svr']);
                     }
                 } else {
                     // обновим статус записи животного при импорте на статус - ошибка
                     $modelAnimal::where($field_primary_key, $animal[$field_primary_key])
                         ->update(['import_status' => ImportStatusEnum::ERROR->value]
                         );
-                    Log::channel('import_milk')->warning('Ошибка импорта животного при добавлении в DATA_ANIMAL, GUID_SVR: ' . $animal['guid_svr']);
+                    Log::channel($import_channel)->warning('Ошибка импорта животного при добавлении в DATA_ANIMAL, GUID_SVR: ' . $animal['guid_svr']);
                 }
             } else {
-                Log::channel('import_milk')->warning('Нет полей сопоставления для сохранения данных животного, GUID_SVR: ' . $animal['guid_svr']);
+                Log::channel($import_channel)->warning('Нет полей сопоставления для сохранения данных животного, GUID_SVR: ' . $animal['guid_svr']);
             }
         }
     }
@@ -136,7 +154,7 @@ class AnimalsImport
      *
      * @return false|array
      */
-    public static function animal_import_breed_check(array $animal, int $breed_code): false|array
+    private static function animal_import_breed_check(array $animal, int $breed_code): false|array
     {
         if (empty($breed_code)) return false;
 
@@ -159,7 +177,7 @@ class AnimalsImport
      *
      * @return false|array
      */
-    public static function animal_import_sex_check(int $sex): false|array
+    private static function animal_import_sex_check(int $sex): false|array
     {
         $gender = DirectoryGenders::where('gender_selex_code', $sex)->first();
 
@@ -177,7 +195,7 @@ class AnimalsImport
      *
      * @return mixed|null
      */
-    public static function animal_import_father_inv_check(array $animal): mixed
+    private static function animal_import_father_inv_check(array $animal): mixed
     {
         $inv = null;    // инвентарный номер по умолчанию
         // если есть код вида животного
@@ -211,7 +229,7 @@ class AnimalsImport
      *
      * @return mixed|null
      */
-    public static function animal_import_mother_inv_check(array $animal): mixed
+    private static function animal_import_mother_inv_check(array $animal): mixed
     {
         $inv = null;    // инвентарный номер по умолчанию
         // если есть код вида животного
@@ -246,7 +264,7 @@ class AnimalsImport
      *
      * @return string
      */
-    public static function animal_import_isp_check(array $animal): string
+    private static function animal_import_isp_check(array $animal): string
     {
         // Значение «Использование» из СЕЛЭКС:
         // •	Целевое
@@ -275,7 +293,7 @@ class AnimalsImport
      *
      * @return array
      */
-    public static function animal_import_value_check(array $animal, array $matching_fields): array
+    private static function animal_import_value_check(array $animal, array $matching_fields): array
     {
         $result_animal = []; // результирующий массив по животному
 
@@ -314,7 +332,7 @@ class AnimalsImport
      *
      * @return mixed
      */
-    public static function animal_import_data_animals_add($animal): mixed
+    private static function animal_import_data_animals_add($animal): mixed
     {
         if (!isset($animal['animal_type_of_keeping_id']))
         {
@@ -336,6 +354,8 @@ class AnimalsImport
                 $animal['animal_sex'] = SystemSexEnum::FEMALE->value;
                 break;
         }
+
+        // Преобразуем массив в объект Request
         $request = Request::create(
             uri: '/v1',
             method: 'post'
@@ -356,7 +376,7 @@ class AnimalsImport
      *
      * @return bool
      */
-    public static function animal_import_identifiers_add($animal, $animal_id): bool
+    private static function animal_import_identifiers_add($animal, $animal_id): bool
     {
         // таблица data.data_animals_codes
         // поля для записи идентификатор животного, сопоставление (левая часть - поля для импорта / правая часть - поля назначения) для таблицы

@@ -71,11 +71,22 @@ class ListWorkers extends Command
         $this->print_table_to_console($workers);
     }
 
+    private static function convertEncoding($string, $fromEncoding, $toEncoding = 'UTF-8'): array|false|string|null
+    {
+        return mb_convert_encoding($string, $toEncoding, $fromEncoding);
+    }
+
     /**
      * Форматирование вывода из консоли в среде Windows.
      */
     private function formated_output_for_windows($output): array
     {
+        // Удаляем нулевые байты из вывода
+        $output = str_replace("\0", '', $output);
+
+        // Преобразуем кодировку вывода консоли в UTF-8
+        $output = self::convertEncoding($output, 'CP866', 'UTF-8');
+
         $lines = explode("\n", $output);
         $result = [];
         foreach ($lines as $line) {
@@ -83,9 +94,8 @@ class ListWorkers extends Command
             if (empty(trim($line))) {
                 continue;
             }
-
             // Пропускаем заголовок
-            if (str_starts_with($line, 'CommandLine')) {
+            if (strpos(strtoupper($line), strtoupper('CommandLine')) === true) {
                 continue;
             }
 
@@ -94,6 +104,10 @@ class ListWorkers extends Command
                 continue;
             }
 
+            // ропускаем если нет в строке 'artisan schedule' или 'artisan queue'
+            if (strpos($line, 'artisan schedule') === false && strpos($line, 'artisan queue') === false) {
+                continue;
+            }
 
             // Удаляем кавычки (одинарные или двойные) только вокруг слова "artisan"
             $line = preg_replace('/[\'"]artisan[\'"]/', 'artisan', $line);
@@ -107,9 +121,7 @@ class ListWorkers extends Command
             $result[] = $line;
         }
         return $result;
-
     }
-
 
     /**
      * Форматирование вывода из консоли в среде Linux

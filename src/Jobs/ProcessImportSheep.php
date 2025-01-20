@@ -4,12 +4,12 @@ namespace Svr\Core\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Svr\Core\Extensions\Handler\ImportMilk;
+use Svr\Core\Extensions\Handler\ImportSheep;
 
 /**
- * Обработчик задачи из очереди на импорт животного молочного КРС из RAW в DATA
+ * Обработчик задачи из очереди на импорт животного (овец) МРС из RAW в DATA
  */
-class ProcessImportMilk implements ShouldQueue
+class ProcessImportSheep implements ShouldQueue
 {
     use Queueable;
 
@@ -28,6 +28,6 @@ class ProcessImportMilk implements ShouldQueue
     */
     public function handle(): void
     {
-        ImportMilk::animalsImportMilk($this->animal_id);
+        ImportSheep::animalsImportSheep($this->animal_id);
     }
 }

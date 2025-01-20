@@ -6,6 +6,9 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\ServiceProvider;
+use Svr\Core\Commands\AddJobsToImportAnimalsBeefQueueCommand;
+use Svr\Core\Commands\AddJobsToImportAnimalsMilkQueueCommand;
+use Svr\Core\Commands\AddJobsToImportAnimalsSheepQueueCommand;
 use Svr\Core\Commands\AddJobsToUpdateAnimalsQueueCommand;
 use Svr\Core\Commands\AddJobsToUpdateCheckAnimalsQueueCommand;
 use Svr\Core\Commands\AddJobsToUpdateCompanyObjectsQueueCommand;
@@ -27,7 +30,10 @@ class CoreServiceProvider extends ServiceProvider
         AddJobsToUpdateDirectoriesQueueCommand::class,
         AddJobsToUpdateCompanyQueueCommand::class,
         AddJobsToUpdateCompanyObjectsQueueCommand::class,
-        AddJobsToUpdateCheckAnimalsQueueCommand::class
+        AddJobsToUpdateCheckAnimalsQueueCommand::class,
+        AddJobsToImportAnimalsMilkQueueCommand::class,
+        AddJobsToImportAnimalsBeefQueueCommand::class,
+        AddJobsToImportAnimalsSheepQueueCommand::class
     ];
 
     /**

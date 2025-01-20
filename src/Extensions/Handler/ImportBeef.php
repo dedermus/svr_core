@@ -6,10 +6,10 @@ use Illuminate\Support\Facades\Log;
 use Svr\Core\Enums\ImportStatusEnum;
 use Svr\Core\Enums\SystemTaskEnum;
 use Svr\Core\Extensions\System\AnimalsImport;
-use Svr\Core\Jobs\ProcessImportMilk;
-use Svr\Raw\Models\FromSelexMilk;
+use Svr\Core\Jobs\ProcessImportBeef;
+use Svr\Raw\Models\FromSelexBeef;
 
-class ImportMilk
+class ImportBeef
 {
     /**
      * Импорт молочного КСР из RAW в DATA
@@ -18,7 +18,7 @@ class ImportMilk
      *
      * @return bool
      */
-    public static function animalsImportMilk($animal_id): bool
+    public static function animalsImportBeef($animal_id): bool
     {
         // таблица data.data_animals
         // поля сопоставления (левая часть - поля для импорта / правая часть - поля назначения) для таблицы
@@ -30,7 +30,7 @@ class ImportMilk
             'ngosregister'			=> 'animal_code_rshn_value',	// значение РСХН (УНСМ) номера животного
             'npol'                  => 'animal_sex_id',             // животное - код пола !!! сопоставляется через метод animal_import_sex_check
             'npor'                  => 'breed_id',                  // животное - код породы !!! сопоставление через метод animal_import_breed_get
-            'mast'		            => 'animal_colour',             // животное - окрас
+            'mast'             		=> 'animal_colour',             // животное - окрас
             'date_rogd'             => 'animal_date_birth',         // животное - дата рождения в формате YYYY.mm.dd
             'date_postupln'         => 'animal_date_income',        // животное - дата поступления в формате YYYY.mm.dd
             'nhoz_rogd'             => 'animal_place_of_birth_id',  // животное - хозяйство рождения (базовый индекс хозяйства)
@@ -52,36 +52,36 @@ class ImportMilk
             'isp'                   => 'animal_breeding_value',     // животное - использование (племенная ценность)  ('UNDEFINED' - не определено, 'BREEDING' - Целевое, 'NON_BREEDING' - Пользовательное)
         ];
 
-        $model = new FromSelexMilk();
+        $model = new FromSelexBeef();
         $field_primary_key = $model->getPrimaryKey();
-        AnimalsImport::animal_import_worker($model, SystemTaskEnum::MILK->value, $matching_fields, $field_primary_key, $animal_id, 'import_milk');
+        AnimalsImport::animal_import_worker($model, SystemTaskEnum::BEEF->value, $matching_fields, $field_primary_key, $animal_id, 'import_beef');
 
         return true;
     }
 
     /**
-     * Добавление животных молочного КРС в очередь по отправке на регистрацию
+     * Добавление животных мясного КРС в очередь по отправке на регистрацию
      *
      * @return bool
      */
-    public static function addSendAnimalMilkQueue(): bool
+    public static function addSendAnimalBeefQueue(): bool
     {
-        $model = new FromSelexMilk();
+        $model = new FromSelexBeef();
         $date_new = new \DateTime();
         $date_new->modify('-1 day');
         $updated_at = $date_new->format('Y-m-d H:i:s');
         // получим список животных, которые застряли в статусе IN_PROGRESS более суток
         $animals_list_old_id = $model::where('import_status', ImportStatusEnum::IN_PROGRESS->value)
-            ->where('task', SystemTaskEnum::MILK->value)
+            ->where('task', SystemTaskEnum::BEEF->value)
             ->where('updated_at', '<=', $updated_at)
             ->pluck($model->getPrimaryKey())
             ->map(fn($id) => (int) $id) // Преобразование в целое число
             ->all();
 
-        Log::channel('import_milk')->info('Запустили метод добавления животных молочного КРС в очередь по отправке на регистрацию.');
+        Log::channel('import_beef')->info('Запустили метод добавления животных мясного КРС в очередь по отправке на регистрацию.');
 
         $animals_list_id = $model::where('import_status', ImportStatusEnum::NEW->value)
-            ->where('task', SystemTaskEnum::MILK->value)
+            ->where('task', SystemTaskEnum::BEEF->value)
             ->pluck($model->getPrimaryKey())
             ->map(fn($id) => (int) $id) // Преобразование в целое число
             ->all();
@@ -90,11 +90,11 @@ class ImportMilk
 
         if($animals_list_id)
         {
-            Log::channel('import_milk')->info('Пробуем добавить в очередь '.count($animals_list_id).' животных.');
+            Log::channel('import_beef')->info('Пробуем добавить в очередь '.count($animals_list_id).' животных.');
 
             foreach($animals_list_id as $animal_id)
             {
-                ProcessImportMilk::dispatch($animal_id)->onQueue(env('QUEUE_IMPORT_MILK', 'import_milk'));
+                ProcessImportBeef::dispatch($animal_id)->onQueue(env('QUEUE_IMPORT_BEEF', 'import_beef'));
 
                 // обновим статус записи животного при импорте на статус - в прогрессе
                 $model::where($model->getPrimaryKey(), $animal_id)
@@ -102,7 +102,7 @@ class ImportMilk
             }
             return true;
         }else{
-            Log::channel('import_milk')->info('Животные для добавления не найдены.');
+            Log::channel('import_beef')->info('Животные для добавления не найдены.');
 
             return false;
         }

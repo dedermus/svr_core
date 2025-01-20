@@ -6,9 +6,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
+use Svr\Core\Commands\AddJobsToImportAnimalsMilkQueueCommand;
+use Svr\Core\Enums\ImportStatusEnum;
+use Svr\Core\Enums\SystemTaskEnum;
 use Svr\Core\Exceptions\CustomException;
 use Svr\Core\Extensions\Handler\CrmListFarms;
 use Svr\Core\Jobs\ProcessCrmGetListCountries;
@@ -22,6 +26,7 @@ use Svr\Core\Models\SystemUsers;
 use Svr\Core\Models\SystemUsersNotifications;
 use Svr\Core\Resources\NotificationsDataResource;
 use Svr\Core\Resources\SvrApiResponseResource;
+use Svr\Raw\Models\FromSelexMilk;
 
 class ApiNotificationsController extends Controller
 {
@@ -80,7 +85,7 @@ class ApiNotificationsController extends Controller
 //
 //       // ProcessCrmGetListFarms::dispatch()
 //        ProcessCrmGetToken::dispatch('svr@plinor.ru', 'ZmQ0czNlWXpyMDY2bGQwbg==', );
-        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
+        //ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
 //        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
 //        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
 //        //CrmAuth::getToken();
@@ -89,7 +94,23 @@ class ApiNotificationsController extends Controller
 //        ProcessCrmGetListCountries::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
 //        ProcessCrmGetListRegions::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
 //        ProcessCrmGetListDistricts::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-        ProcessImportMilk::dispatch()->onQueue(env('QUEUE_IMPORT_MILK', 'import_milk'));
+
+
+        Artisan::call('animals:send-milk');
+
+//        $animals_list_id = FromSelexMilk::where('import_status', ImportStatusEnum::NEW->value)
+//            ->where('task', SystemTaskEnum::MILK->value)
+//            ->pluck((new FromSelexMilk)->getPrimaryKey())
+//            ->map(fn($id) => (int) $id) // Преобразование в целое число
+//            ->all();
+//        foreach($animals_list_id as $animal_id)
+//        {
+//            print_r($animal_id."\n\r");
+//        }
+//        die();
+
+
+        //ProcessImportMilk::dispatch()->onQueue(env('QUEUE_IMPORT_MILK', 'import_milk'));
 
 
 
