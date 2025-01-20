@@ -3,8 +3,7 @@
 namespace Svr\Core\Extensions\Handler;
 
 use Illuminate\Support\Facades\Log;
-use Svr\Core\Jobs\ProcessHerriotCheckSendAnimals;
-use Svr\Core\Models\SystemUsersNotifications;
+use Svr\Core\Jobs\ProcessApplicationClose;
 use Svr\Data\Models\DataApplications;
 use Svr\Data\Models\DataApplicationsAnimals;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 class ApplicationClose
 {
     /**
-     * Метод добавления животных в очередь на проверку статуса регистрации
+     * Метод добавления заявок в очередь на закрытие
      * @return bool
      */
     public static function addApplicationCloseQueue()
@@ -25,7 +24,9 @@ class ApplicationClose
         {
             Log::channel('application_close')->info('Пробуем добавить заявку в очередь.');
 
-            ProcessHerriotCheckSendAnimals::dispatch($application_data['application_id'])->onQueue(env('QUEUE_APPLICATION_CLOSE', 'application_close'));
+            ProcessApplicationClose::dispatch($application_data->application_id)->onQueue(env('QUEUE_APPLICATION_CLOSE', 'application_close'));
+
+            DataApplications::find($application_data->application_id)->update(['updated_at' => date('Y-m-d H:i:s')]);
 
             return true;
         }else{
@@ -40,27 +41,27 @@ class ApplicationClose
 		$application_data	= DataApplications::find($application_id);
 		$application_data->update(['updated_at' => date('Y-m-d H:i:s')]);
 
-		$application_data['animals_count_total']	= DB::table(DataApplicationsAnimals::getTableName())->where([
+		$animals_count_total	= DB::table(DataApplicationsAnimals::getTableName())->where([
 			'application_id'			=> $application_data['application_id']
 		])->count();
 
-		$application_data['animals_count_good']		= DB::table(DataApplicationsAnimals::getTableName())->where([
+		$animals_count_good		= DB::table(DataApplicationsAnimals::getTableName())->where([
 			'application_id'			=> $application_data['application_id'],
 			'application_animal_status'	=> 'registered'
 		])->count();
 
-		$application_data['animals_count_bad']		= DB::table(DataApplicationsAnimals::getTableName())->where([
+		$animals_count_bad		= DB::table(DataApplicationsAnimals::getTableName())->where([
 			'application_id'			=> $application_data['application_id'],
 			'application_animal_status'	=> 'rejected'
 		])->count();
 
-		if($application_data['animals_count_total'] > 0 && $application_data['animals_count_total'] == ($application_data['animals_count_good'] + $application_data['animals_count_bad']))
+		if($animals_count_total > 0 && $animals_count_total == ($animals_count_good + $animals_count_bad))
 		{
-			if($application_data['animals_count_bad'] > 0)
+			if($animals_count_bad > 0)
 			{
 				Log::channel('application_close')->warning('Частичная заявка, закрываем.');
 
-				(new SystemUsersNotifications)->notificationCreate('application_complete_partial', $application_data['company_id'], false, $application_data);
+				//(new SystemUsersNotifications)->notificationCreate('application_complete_partial', $application_data['company_id'], false, $application_data);
 
 				$application_data->update([
 					'application_status'			=> 'finished',
@@ -69,7 +70,7 @@ class ApplicationClose
 			}else{
 				Log::channel('application_close')->warning('Полная заявка, закрываем.');
 
-				(new SystemUsersNotifications)->notificationCreate('application_complete_full', $application_data['company_id'], false, $application_data);
+				//(new SystemUsersNotifications)->notificationCreate('application_complete_full', $application_data['company_id'], false, $application_data);
 
 				$application_data->update([
 					'application_status'			=> 'finished',
@@ -78,7 +79,7 @@ class ApplicationClose
 			}
 		}
 
-		if($application_data['animals_count_total'] == 0)
+		if($animals_count_total == 0)
 		{
 			$application_data->update([
 				'application_status'			=> 'finished'

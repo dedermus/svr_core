@@ -6,6 +6,7 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Exceptions\Handler;
 use Illuminate\Support\ServiceProvider;
+use Svr\Core\Commands\AddJobsToApplicationCloseQueueCommand;
 use Svr\Core\Commands\AddJobsToUpdateAnimalsQueueCommand;
 use Svr\Core\Commands\AddJobsToUpdateCheckAnimalsQueueCommand;
 use Svr\Core\Commands\AddJobsToUpdateCompanyObjectsQueueCommand;
@@ -27,7 +28,8 @@ class CoreServiceProvider extends ServiceProvider
         AddJobsToUpdateDirectoriesQueueCommand::class,
         AddJobsToUpdateCompanyQueueCommand::class,
         AddJobsToUpdateCompanyObjectsQueueCommand::class,
-        AddJobsToUpdateCheckAnimalsQueueCommand::class
+        AddJobsToUpdateCheckAnimalsQueueCommand::class,
+        AddJobsToApplicationCloseQueueCommand::class,
     ];
 
     /**
@@ -245,6 +247,17 @@ class CoreServiceProvider extends ServiceProvider
 				],
 			]
 		);
+
+        /** Добавим файл лога для очереди application_close */
+        config(
+            [
+                'logging.channels.application_close' => [
+                    'driver' => 'single',
+                    'path' => storage_path('logs/application_close.log'),
+                    'level' => 'info', // Уровень логирования
+                ],
+            ]
+        );
 
         /** Добавим в конфиг файл config/app.php ключ 'api_prefix' равный значению ключа API_PREFIX из окружения (.env)
          * @example Получить значение: config('svr.api_prefix') config('svr.api_prefix')
