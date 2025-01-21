@@ -32,6 +32,10 @@ class HerriotSendAnimals
 
 			foreach($animals_list as $animal_data)
 			{
+				DataApplicationsAnimals::find($animal_data->application_animal_id)->update([
+					'application_animal_date_last_update' => date('Y-m-d H:i:s')
+				]);
+
 				ProcessHerriotSendAnimals::dispatch((array)$animal_data)->onQueue(env('QUEUE_HERRIOT_SEND_ANIMALS', 'herriot_send_animals'));
 			}
 

@@ -28,9 +28,12 @@ class HerriotCheckSendAnimals
         if($animals_list && is_array($animals_list) && count($animals_list) > 0)
         {
             Log::channel('herriot_animals_check')->info('Пробуем добавить в очередь '.count($animals_list).' животных.');
-
             foreach($animals_list as $animal_data)
             {
+				DataApplicationsAnimals::find($animal_data->application_animal_id)->update([
+					'application_animal_date_last_update' => date('Y-m-d H:i:s')
+				]);
+
                 ProcessHerriotCheckSendAnimals::dispatch((array)$animal_data)->onQueue(env('QUEUE_HERRIOT_CHECK_SEND_ANIMALS', 'herriot_check_send_animals'));
             }
 

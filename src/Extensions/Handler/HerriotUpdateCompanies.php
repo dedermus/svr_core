@@ -38,6 +38,8 @@ class HerriotUpdateCompanies
         {
             Log::channel('herriot_companies')->info('Пробуем добавить в очередь компанию: '.($company->company_id));
 
+			DataCompanies::find($company->company_id)->update(['updated_at' => date('Y-m-d H:i:s')]);
+
             ProcessHerriotUpdateCompanies::dispatch($company->company_id)->onQueue(env('QUEUE_HERRIOT_COMPANIES', 'herriot_companies'));
 
             return true;
