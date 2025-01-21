@@ -7,7 +7,6 @@ use Illuminate\Foundation\Queue\Queueable;
 use Svr\Core\Extensions\Handler\HerriotUpdateCompaniesObjects;
 
 class ProcessHerriotUpdateCompaniesObjects implements ShouldQueue
-//class ProcessHerriotUpdateCompaniesObjects
 {
     use Queueable;
 	protected string $company_id;        // ID компании
@@ -24,7 +23,7 @@ class ProcessHerriotUpdateCompaniesObjects implements ShouldQueue
      * Execute the job.
      *
     */
-    public function handle()
+    public function handle(): void
     {
         HerriotUpdateCompaniesObjects::getCompanyObjects($this->company_id);
     }

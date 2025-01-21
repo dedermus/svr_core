@@ -61,59 +61,6 @@ class ApiNotificationsController extends Controller
         $user = $this->systemUsers->getUser(optional($notification)->user_id);
         $this->updateNotificationDateView($notification_id);
         $data = $this->prepareResponseData($notification, $user);
-        //$recorded = Http::recorded();
-        // Basic authentication...
-//        $response = Http::acceptJson()->post('https://crm.plinor.local/allApi/getToken/', [
-//            'email' => 'svr@plinor.ru', 'password' => 'ZmQ0czNlWXpyMDY2bGQwbg=='
-//        ]);
-
-
-
-
-//        $response = Http::withUrlParameters([
-//            'host' => env('CRM_HOST'),
-//            'api' => env('CRM_API'),
-//            'endpoint' => env('CRM_END_POINT_TOKEN'),
-//        ])->acceptJson()->post('{+host}/{api}/{endpoint}/', [
-//            'email' => 'svr@plinor.ru', 'password' => 'ZmQ0czNlWXpyMDY2bGQwbg=='
-//        ]);
-//        $response = json_decode($response->body(), true);
-//        if ($response['data']['token']) {
-//            var_export($response['data']['token']); die();
-//        }
-//dd(json_decode($response->body(), true), $recorded);
-//
-//       // ProcessCrmGetListFarms::dispatch()
-//        ProcessCrmGetToken::dispatch('svr@plinor.ru', 'ZmQ0czNlWXpyMDY2bGQwbg==', );
-        //ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
-//        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
-//        ProcessSendingEmail::dispatch('dedermus@gmail.com', 'Это для Вани', 'Привет Мир и ВАня!')->onQueue(env('QUEUE_EMAIL', 'email'));
-//        //CrmAuth::getToken();
-//        ProcessCrmGetListUsers::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-//        ProcessCrmGetListFarms::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-//        ProcessCrmGetListCountries::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-//        ProcessCrmGetListRegions::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-//        ProcessCrmGetListDistricts::dispatch()->onQueue(env('QUEUE_CRM', 'crm'));
-
-
-        Artisan::call('animals:send-milk');
-
-//        $animals_list_id = FromSelexMilk::where('import_status', ImportStatusEnum::NEW->value)
-//            ->where('task', SystemTaskEnum::MILK->value)
-//            ->pluck((new FromSelexMilk)->getPrimaryKey())
-//            ->map(fn($id) => (int) $id) // Преобразование в целое число
-//            ->all();
-//        foreach($animals_list_id as $animal_id)
-//        {
-//            print_r($animal_id."\n\r");
-//        }
-//        die();
-
-
-        //ProcessImportMilk::dispatch()->onQueue(env('QUEUE_IMPORT_MILK', 'import_milk'));
-
-
-
 
         return new SvrApiResponseResource($data);
     }

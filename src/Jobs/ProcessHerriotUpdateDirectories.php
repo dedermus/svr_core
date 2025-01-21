@@ -14,7 +14,7 @@ class ProcessHerriotUpdateDirectories implements ShouldQueue
      * Execute the job.
      *
     */
-    public function handle()
+    public function handle(): void
     {
         HerriotUpdateDirectories::getDirectories();
     }

@@ -6,7 +6,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Svr\Core\Extensions\Handler\CrmListUsers;
 
-class ProcessCrmGetListUsers
+class ProcessCrmGetListUsers implements ShouldQueue
 {
     use Queueable;
 

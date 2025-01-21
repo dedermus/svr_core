@@ -33,7 +33,6 @@ class CoreServiceProvider extends ServiceProvider
         AddJobsToUpdateCompanyObjectsQueueCommand::class,
         AddJobsToUpdateCheckAnimalsQueueCommand::class,
         AddJobsToApplicationCloseQueueCommand::class,
-        AddJobsToUpdateCheckAnimalsQueueCommand::class,
         AddJobsToImportAnimalsMilkQueueCommand::class,
         AddJobsToImportAnimalsBeefQueueCommand::class,
         AddJobsToImportAnimalsSheepQueueCommand::class

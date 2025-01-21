@@ -9,7 +9,7 @@ use Svr\Core\Extensions\Handler\HerriotCheckSendAnimals;
 class ProcessHerriotCheckSendAnimals implements ShouldQueue
 {
     use Queueable;
-	protected $application_animal_data;        // массив данных о животном
+	protected array $application_animal_data;        // массив данных о животном
 
 	/**
 	 * Create a new job instance.

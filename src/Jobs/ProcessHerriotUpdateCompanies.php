@@ -7,7 +7,6 @@ use Illuminate\Foundation\Queue\Queueable;
 use Svr\Core\Extensions\Handler\HerriotUpdateCompanies;
 
 class ProcessHerriotUpdateCompanies implements ShouldQueue
-//class ProcessHerriotUpdateCompanies
 {
     use Queueable;
 	protected string $company_id;        // ID компании

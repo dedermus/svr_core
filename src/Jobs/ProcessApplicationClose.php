@@ -9,7 +9,7 @@ use Svr\Core\Extensions\Handler\ApplicationClose;
 class ProcessApplicationClose implements ShouldQueue
 {
     use Queueable;
-	protected $application_id;
+	protected int $application_id;  // ID заявки
 
 	/**
 	 * Create a new job instance.

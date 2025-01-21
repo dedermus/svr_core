@@ -6,7 +6,6 @@ use Svr\Core\Jobs\ProcessCrmGetListDistricts;
 use Svr\Core\Jobs\ProcessCrmGetListFarms;
 use Svr\Core\Jobs\ProcessCrmGetListRegions;
 use Svr\Core\Jobs\ProcessCrmGetListUsers;
-use Svr\Core\Jobs\ProcessImportMilk;
 
 Schedule::command('animals:send-milk')->everyMinute()->runInBackground()->description('Добавление животных молочного КРС из RAW в очередь');
 Schedule::command('animals:send-beef')->everyMinute()->runInBackground()->description('Добавление животных мясного КРС из RAW в очередь');
@@ -23,4 +22,4 @@ Schedule::command('herriot:update-company')->everyMinute()->runInBackground()->d
 Schedule::command('herriot:update-company-objects')->everyMinute()->runInBackground()->description('Обновление поднадзорных объектов из Хорриота');
 Schedule::command('herriot:send-animals')->everyMinute()->runInBackground()->description('Отправка животных на регистрацию в Хорриот');
 Schedule::command('herriot:check-send-animals')->everyMinute()->runInBackground()->description('Проверка статуса регистрации животных в Хорриот');
-
+Schedule::command('herriot:application_close')->everyMinute()->runInBackground()->description('Закрытие заявок');

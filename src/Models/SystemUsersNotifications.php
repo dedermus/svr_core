@@ -11,6 +11,7 @@ use Illuminate\Validation\Rule;
 use Svr\Core\Enums\SystemNotificationsTypesEnum;
 use Svr\Core\Extensions\Handler\SystemEmail;
 use Svr\Core\Extensions\System\SystemFilter;
+use Svr\Core\Jobs\ProcessSendingEmail;
 use Svr\Core\Traits\GetTableName;
 use Svr\Core\Traits\GetValidationRules;
 use Telegram\Bot\Laravel\Facades\Telegram;
@@ -263,7 +264,7 @@ class SystemUsersNotifications extends Model
             $email = $user_data['user_email'];
             $title = SystemFilter::replace_action($notification_message_data['message_title_email'], $notification_data);
             $message = SystemFilter::replace_action($notification_message_data['message_text_email'], $notification_data);
-            SystemEmail::sendEmailCustom($email, $title, $message);
+            ProcessSendingEmail::dispatch($email, $title, $message);
         }
     }
 
